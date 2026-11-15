@@ -1,0 +1,68 @@
+<svg viewBox="0 0 680 508" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>本地规则与模型复核的先后关系</title>
+<desc>用户输入先经本地关键词规则即时判定，只有信号冲突、描述过短或模式装不上时才调用模型复核。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<g>
+<rect x="240" y="30" width="200" height="44" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="340" y="52" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="14" font-weight="500" fill="#2C2C2A">你输入的一句话</text>
+</g>
+<path d="M340 74 L340 100" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="120" y="104" width="440" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="340" y="124" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="14" font-weight="500" fill="#0C447C">① 本地规则：关键词三层打分</text>
+<text x="340" y="144" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="12" fill="#185FA5">不联网 · 不调模型 · 毫秒级</text>
+</g>
+
+<path d="M200 160 L130 192" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 160 L340 192" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M470 160 L550 192" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="40" y="196" width="180" height="64" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="130" y="220" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="13" font-weight="500" fill="#085041">点名工具 / 单一强信号</text>
+<text x="130" y="240" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="12" fill="#0F6E56">当场定案，结束</text>
+</g>
+
+<g>
+<rect x="250" y="196" width="180" height="64" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="340" y="220" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="13" font-weight="500" fill="#085041">没有任何独有工具信号</text>
+<text x="340" y="240" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="12" fill="#0F6E56">留在当前默认模式</text>
+</g>
+
+<g>
+<rect x="460" y="196" width="180" height="64" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="550" y="220" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="13" font-weight="500" fill="#633806">冲突 · 太短 · 装不上</text>
+<text x="550" y="240" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="12" fill="#854F0B">才继续问模型</text>
+</g>
+
+<path d="M550 260 L550 278 L340 278 L340 292" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="120" y="296" width="440" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="340" y="316" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="14" font-weight="500" fill="#0C447C">② 模型复核：宿主代你问一次模型</text>
+<text x="340" y="336" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="12" fill="#185FA5">带上能力差异表，只许回一行 JSON</text>
+</g>
+
+<path d="M340 352 L340 368 L145 368 L145 384" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 352 L340 368 L535 368 L535 384" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="40" y="388" width="210" height="56" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="145" y="408" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="13" font-weight="500" fill="#2C2C2A">返回合法 JSON</text>
+<text x="145" y="426" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="12" fill="#5F5E5A">替换结论并标注「模型复核」</text>
+</g>
+
+<g>
+<rect x="430" y="388" width="210" height="56" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="535" y="408" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="13" font-weight="500" fill="#2C2C2A">超时 / 坏 JSON / 关掉兜底</text>
+<text x="535" y="426" text-anchor="middle" dominant-baseline="central" font-family="var(--font-sans)" font-size="12" fill="#5F5E5A">保留本地结论并说明原因</text>
+</g>
+
+<text x="340" y="470" text-anchor="middle" font-family="var(--font-sans)" font-size="12" fill="#5F5E5A">本地永远先跑：点击当刻结论就画出来，模型结果只是后台补丁</text>
+</svg>

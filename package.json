@@ -1,0 +1,68 @@
+{
+  "name": "dsh-npie-modeguide",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "用自然语言描述任务，自动判断该用哪个 Agent 预设（标准 / PTC / 极简 / 创造）。本地规则优先，拿不准时才调一次模型；能力对照表从当前版本内核预设解析。",
+  "license": "MIT",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "src",
+    "build.mjs",
+    "scripts",
+    "test",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "locale/*.json",
+    "icon.svg"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "agent-preset",
+    "mode",
+    "recommend"
+  ],
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.2-alpha.2 || >=0.1.5-rc.2 || >=0.1.7-alpha.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-api-gateway",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-workspace"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node build.mjs && node --test test/*.test.mjs && node scripts/eval.mjs",
+    "refresh:baseline": "node scripts/refresh-baseline.mjs",
+    "eval": "node scripts/eval.mjs"
+  }
+}

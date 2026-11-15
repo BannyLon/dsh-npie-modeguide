@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "note": "Generated from the installed DeepSeek Harness app.asar; run npm run refresh:baseline after a kernel upgrade.",
+    "source": "DeepSeek Harness app.asar /dsh/node_modules/@deepseek-ai/dsh-web-app/presets/*.patch.yml",
+    "platform": "darwin"
+  },
+  "matrix": {
+    "columns": [
+      {
+        "id": "standard",
+        "name": "标准模式"
+      },
+      {
+        "id": "ptc",
+        "name": "PTC 模式"
+      },
+      {
+        "id": "minimal",
+        "name": "极简模式"
+      },
+      {
+        "id": "cordis",
+        "name": "创造模式"
+      }
+    ],
+    "rows": [
+      {
+        "id": "files",
+        "label": "文件读写",
+        "hint": "读、写、编辑工作区文件",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "search",
+        "label": "文件搜索",
+        "hint": "按名找文件、按内容搜索",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "web",
+        "label": "联网检索",
+        "hint": "网页搜索与抓取",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "subagent",
+        "label": "子代理",
+        "hint": "派生子代理并行干活",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "workflow",
+        "label": "工作流编排",
+        "hint": "多阶段大扇出编排",
+        "cells": {
+          "standard": true,
+          "ptc": false,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "plan",
+        "label": "计划模式",
+        "hint": "先出方案再动手",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "skill",
+        "label": "技能",
+        "hint": "加载并使用 Skill",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "goal",
+        "label": "目标",
+        "hint": "跨轮持续推进一个目标",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "todo",
+        "label": "任务清单",
+        "hint": "给多步任务记进度",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "ptc",
+        "label": "execute 代码执行",
+        "hint": "写一段 JS 批量调工具，只回结果",
+        "cells": {
+          "standard": false,
+          "ptc": true,
+          "minimal": false,
+          "cordis": false
+        }
+      },
+      {
+        "id": "office",
+        "label": "Office 文档",
+        "hint": "读写 Word / Excel / PPT",
+        "cells": {
+          "standard": true,
+          "ptc": true,
+          "minimal": false,
+          "cordis": false
+        }
+      },
+      {
+        "id": "cordis",
+        "label": "改 DSH 本体",
+        "hint": "写插件、改预设、加界面",
+        "cells": {
+          "standard": false,
+          "ptc": false,
+          "minimal": false,
+          "cordis": true
+        }
+      },
+      {
+        "id": "pluginManager",
+        "label": "插件管理",
+        "hint": "装、卸、启停插件",
+        "cells": {
+          "standard": "conditional",
+          "ptc": false,
+          "minimal": false,
+          "cordis": "conditional"
+        }
+      }
+    ]
+  }
+}

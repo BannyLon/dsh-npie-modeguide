@@ -1,0 +1,110 @@
+[
+  {
+    "text": "在设置里加一个开关，控制是否自动保存",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "动作+对象组合：加 + 开关"
+  },
+  {
+    "text": "把主题改成深色",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "动作+对象：改 + 主题"
+  },
+  {
+    "text": "给侧边栏加一个搜索框",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "动作+对象：加 + 侧边栏"
+  },
+  {
+    "text": "add a shortcut to open settings",
+    "expect": "cordis",
+    "lang": "en",
+    "why": "英文动作+对象：add + shortcut"
+  },
+  {
+    "text": "你能帮我写一个插件吗",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "写一个插件（不是 pinned 里的原话，靠组合判据）"
+  },
+  {
+    "text": "这个功能能不能做成插件",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "做 + 插件"
+  },
+  {
+    "text": "把这两个子代理并行起来跑",
+    "expect": "standard",
+    "lang": "zh",
+    "why": "并行 + 子代理 = 工作流编排"
+  },
+  {
+    "text": "我要跑一个对照实验，看两个模型谁强",
+    "expect": "minimal",
+    "lang": "zh",
+    "why": "对照实验是极简模式的唯一用途"
+  },
+  {
+    "text": "用极简模式跑一遍，不要任何工具干扰",
+    "expect": "minimal",
+    "lang": "zh",
+    "why": "点名极简（同时带否定词，否定只作用于它修饰的那次命中）"
+  },
+  {
+    "text": "写一段脚本把这个目录的所有文件压缩一下",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "写脚本 + 所有文件 = execute"
+  },
+  {
+    "text": "一次性跑完这 50 个任务的校验",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "一次性跑完 = 批处理"
+  },
+  {
+    "text": "这个报错是什么意思",
+    "expect": "default",
+    "lang": "zh",
+    "why": "解释现状"
+  },
+  {
+    "text": "帮我解释一下 workflow 和 ptc 的区别",
+    "expect": "default",
+    "lang": "zh",
+    "why": "解释 + 两个模式名同时出现，不该被带去任何一边"
+  },
+  {
+    "text": "don't add a panel for this",
+    "expect": "default",
+    "lang": "en",
+    "why": "英文否定 + 被否定的对象，不许判成创造"
+  },
+  {
+    "text": "我想看一下这个 preset 是怎么定义的",
+    "expect": "default",
+    "lang": "zh",
+    "why": "看一下 = 查看现状"
+  },
+  {
+    "text": "这两段代码哪个更快",
+    "expect": "default",
+    "lang": "zh",
+    "why": "比较性能，无独有工具"
+  },
+  {
+    "text": "帮我把这份周报写得更简洁",
+    "expect": "default",
+    "lang": "zh",
+    "why": "写作"
+  },
+  {
+    "text": "怎么把这段 JSON 转成 CSV",
+    "expect": "default",
+    "lang": "zh",
+    "why": "单次格式转换，标准模式的 bash 就能做"
+  }
+]

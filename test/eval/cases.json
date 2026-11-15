@@ -1,0 +1,308 @@
+[
+  {
+    "text": "写个插件，给侧栏加一个按钮",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "点名要写插件：改 DSH 本体只有创造模式有"
+  },
+  {
+    "text": "帮我做一个插件，能导出当前会话",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "「做一个插件」是指令"
+  },
+  {
+    "text": "我想自定义模式，把联网关掉",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "改预设属于 cordis"
+  },
+  {
+    "text": "给输入框加个面板显示字数",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "加面板是改界面"
+  },
+  {
+    "text": "write a plugin that adds a sidebar panel",
+    "expect": "cordis",
+    "lang": "en",
+    "why": "英文点名写插件"
+  },
+  {
+    "text": "create a skill for reviewing my code",
+    "expect": "cordis",
+    "lang": "en",
+    "why": "英文点名建 skill"
+  },
+  {
+    "text": "change the theme to dark purple",
+    "expect": "cordis",
+    "lang": "en",
+    "why": "改主题只有创造模式能做"
+  },
+
+  {
+    "text": "用工作流把这 200 个文件并行审一遍",
+    "expect": "standard",
+    "lang": "zh",
+    "why": "点名用工作流：PTC 关掉了 workflow"
+  },
+  {
+    "text": "用 workflow 编排，两个子代理分工写和审",
+    "expect": "standard",
+    "lang": "zh",
+    "why": "工作流编排是标准模式的独有能力"
+  },
+  {
+    "text": "run a workflow that fans out over these repos",
+    "expect": "standard",
+    "lang": "en",
+    "why": "英文点名工作流"
+  },
+  {
+    "text": "这个任务要工作流编排：先调研再实现再回归",
+    "expect": "standard",
+    "lang": "zh",
+    "why": "工作流编排（strong）"
+  },
+
+  {
+    "text": "做个纯净基线对照实验，看模型本身的表现",
+    "expect": "minimal",
+    "lang": "zh",
+    "why": "纯净基线是极简模式唯一的存在理由"
+  },
+  {
+    "text": "我要跑一个最小复现，确认是插件还是内核的问题",
+    "expect": "minimal",
+    "lang": "zh",
+    "why": "最小复现点名极简"
+  },
+  {
+    "text": "use minimal mode to get a clean baseline",
+    "expect": "minimal",
+    "lang": "en",
+    "why": "英文点名极简模式"
+  },
+  {
+    "text": "做个基线对照，只改一处看差异",
+    "expect": "minimal",
+    "lang": "zh",
+    "why": "基线对照（strong）"
+  },
+
+  {
+    "text": "把这批 CSV 去重后按月份汇总",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "去重 + 汇总，两条线索才够，execute 一次做完"
+  },
+  {
+    "text": "批量重命名下载目录里的文件",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "批量重命名（strong）"
+  },
+  {
+    "text": "帮我把下载目录 300 个文件按类型分类重命名",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "分类 + 重命名两条线索"
+  },
+  {
+    "text": "遍历所有文件，把里面的 TODO 抓出来合并成一份",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "遍历（strong）"
+  },
+  {
+    "text": "batch rename these screenshots by date",
+    "expect": "ptc",
+    "lang": "en",
+    "why": "英文批量改名"
+  },
+  {
+    "text": "dedupe the rows and aggregate by month",
+    "expect": "ptc",
+    "lang": "en",
+    "why": "英文两条线索"
+  },
+  {
+    "text": "用 execute 把这三份数据一次处理完",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "点名 execute"
+  },
+
+  {
+    "text": "我想写一首诗",
+    "expect": "default",
+    "lang": "zh",
+    "why": "纯文本生成，13 项差异一项都不需要"
+  },
+  {
+    "text": "帮我把这段话翻译成英文",
+    "expect": "default",
+    "lang": "zh",
+    "why": "翻译不需要任何独有工具"
+  },
+  {
+    "text": "读一下这个 PDF，总结要点",
+    "expect": "default",
+    "lang": "zh",
+    "why": "总结是纯文本输出"
+  },
+  {
+    "text": "帮我统计一下这份表格有多少行",
+    "expect": "default",
+    "lang": "zh",
+    "why": "「统计」只是单条线索，标准模式的 bash 就够，不需要 execute"
+  },
+  {
+    "text": "帮我筛选一下这些日志里的报错",
+    "expect": "default",
+    "lang": "zh",
+    "why": "筛选是单条线索，而且是排错语境"
+  },
+  {
+    "text": "这个表格需要整理一下",
+    "expect": "default",
+    "lang": "zh",
+    "why": "只有弱线索，不该断言"
+  },
+  {
+    "text": "解释一下这段正则",
+    "expect": "default",
+    "lang": "zh",
+    "why": "解释现状，不是要独有工具"
+  },
+  {
+    "text": "我想写一首诗",
+    "expect": "default",
+    "lang": "zh",
+    "why": "去重：同一句在两种默认下都必须不换"
+  },
+
+  {
+    "text": "我装了个插件，为什么没生效？",
+    "expect": "default",
+    "lang": "zh",
+    "why": "「插件」不应把排错带去创造模式"
+  },
+  {
+    "text": "这个 workflow 报错了，帮我看看",
+    "expect": "default",
+    "lang": "zh",
+    "why": "报错是排错语境，不是要编排"
+  },
+  {
+    "text": "这个面板怎么配置？",
+    "expect": "default",
+    "lang": "zh",
+    "why": "询问用法，不是要改界面"
+  },
+  {
+    "text": "my plugin stopped working after the update",
+    "expect": "default",
+    "lang": "en",
+    "why": "英文排错语境"
+  },
+  {
+    "text": "why does the workflow fail on the second step",
+    "expect": "default",
+    "lang": "en",
+    "why": "英文 why + fail"
+  },
+  {
+    "text": "帮我看看这个插件是干什么的",
+    "expect": "default",
+    "lang": "zh",
+    "why": "询问用途，不是要写插件"
+  },
+  {
+    "text": "修一下这个插件的 bug，它启动就崩",
+    "expect": "default",
+    "lang": "zh",
+    "why": "修 bug 是排错"
+  },
+  {
+    "text": "don't use workflow, just answer directly",
+    "expect": "default",
+    "lang": "en",
+    "why": "英文否定必须生效，否则会被当成点名工作流"
+  },
+  {
+    "text": "不要写插件，只改一个文案",
+    "expect": "default",
+    "lang": "zh",
+    "why": "中文否定必须生效"
+  },
+  {
+    "text": "别用工作流，直接做",
+    "expect": "default",
+    "lang": "zh",
+    "why": "否定窗口要覆盖「用工作流」的起始字"
+  },
+  {
+    "text": "don’t use workflow here",
+    "expect": "default",
+    "lang": "en",
+    "why": "弯引号也要能识别否定"
+  },
+
+  {
+    "text": "帮我把这段话润色得更正式一些",
+    "expect": "default",
+    "lang": "zh",
+    "why": "纯文本加工"
+  },
+  {
+    "text": "给我三个产品名字，要中文的",
+    "expect": "default",
+    "lang": "zh",
+    "why": "创意生成，无独有工具"
+  },
+  {
+    "text": "summarize this article in five bullets",
+    "expect": "default",
+    "lang": "en",
+    "why": "英文纯文本任务"
+  },
+  {
+    "text": "explain how the preset registry works",
+    "expect": "default",
+    "lang": "en",
+    "why": "英文解释请求"
+  },
+  {
+    "text": "这周的工作计划帮我理一理",
+    "expect": "default",
+    "lang": "zh",
+    "why": "「理一理」是弱线索"
+  },
+  {
+    "text": "看看这个项目有什么问题",
+    "expect": "default",
+    "lang": "zh",
+    "why": "泛泛的查看，无独有工具"
+  },
+  {
+    "text": "把这段中文翻成英文，注意语气",
+    "expect": "default",
+    "lang": "zh",
+    "why": "翻译"
+  },
+  {
+    "text": "what's the difference between standard and ptc",
+    "expect": "default",
+    "lang": "en",
+    "why": "询问差异，不是要换模式"
+  },
+  {
+    "text": "帮我写一封给客户的道歉邮件",
+    "expect": "default",
+    "lang": "zh",
+    "why": "写作"
+  }
+]

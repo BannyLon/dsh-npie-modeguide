@@ -1,0 +1,23 @@
+# dsh-npie-modeguide bundle patch —— 把插件行插进 profile 的组合树。
+#
+# 这一行的 id（`npie-modeguide`）是**契约**：宿主按 entry.id 服务设置命名空间，
+# 客户端半区读配置也认它。改 id 必须同时改客户端半区。
+#
+# config 的默认值写在这里；用户要在 profile 的 cordis.patch.yml 里覆盖时，
+# 用同一个 id 再写一条（后应用的层覆盖前一层）：
+#   - id: npie-modeguide
+#     config:
+#       llmFallback: false
+- insert:
+    - id: npie-modeguide
+      name: 'dsh-npie-modeguide'
+      config:
+        # 本地规则拿不准时，是否调一次模型兜底。
+        # 关掉后行为完全离线：拿不准就保持当前模式，只给「没看出必要」的结论。
+        llmFallback: true
+        # 调模型时用的 provider/model。留空 = 跟随「设置 → 模型」里的默认模型，
+        # 这样用户不用为这个插件单独配一遍。
+        provider: ''
+        model: ''
+        # 单次判定超时（毫秒）。超时未返回就退回本地建议，不让界面一直转圈。
+        timeoutMs: 20000
