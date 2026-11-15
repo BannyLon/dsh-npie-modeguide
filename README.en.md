@@ -43,20 +43,46 @@ modes are not needed here. This verdict is decided locally, without waiting for 
 
 ## Are there similar projects on GitHub?
 
-Yes. Search and re-verification on 2026-11-15:
+Yes. Star counts below were measured through the GitHub API on 2026-11-16
+(`stargazers_count` of `api.github.com/repos/<owner>/<repo>`), not recalled from memory.
+There are two layers, because "similar" means two different things.
 
-| Project | What it does | Boundary |
-|---|---|---|
-| StephenXiong001/dsh-task-mode-switch | Composer toolbar switch; AUTO picks one of four presets from draft keywords | 1 star, newly created; four modes hard-coded; engines pinned to a kernel version |
-| framefutura/dsh-mode-seat | Persistent mode selector, can set a default for new tasks | No AUTO; only "choose", never "which to choose" |
-| LeemanCheung/dsh-agent-preset-recommender | Recommends presets from past activity | Based on history, not the current task text |
-| yjh051108/dsh-routing-suite | Routes reasoning styles (spec/react/mixed) | Not the four Agent presets; requires an injector |
+**Layer 1 — same goal: decide which Agent preset this task needs.**
+
+| Project | Stars | What it does | Boundary |
+|---|---:|---|---|
+| StephenXiong001/dsh-task-mode-switch | 1 | Toolbar switch + AUTO picks one of four presets from draft keywords | Four modes hard-coded; no reason, no accuracy evidence; engines pinned to one kernel version |
+| LeemanCheung/dsh-agent-preset-recommender | 2 | Scans local Codex / Claude Code / WorkBuddy activity, then recommends a preset | Recommends from **past behaviour**, never reads the current task; untouched since 2026-09-05 |
+| jeffcwj/dsh-preset-switcher | 4 | Hot-swaps the preset of a running task | Only "switches", never "which one" |
+| framefutura/dsh-mode-seat | 0 | Persistent mode selector in the composer | No AUTO; only "choose" |
+
+**Layer 2 — adjacent layer: decides whether anyone wants to click that button at all.**
+
+| Project | Stars | What it does | Relationship |
+|---|---:|---|---|
+| yjh051108/dsh-routing-suite | 7029 | Persona-level reasoning-mode router (spec/react/mixed/weak) + runtime injector + graded task protocol, with P1–P23 measurements | Changes **reasoning posture**, not the capability set; `engines` stops at `<0.2.0`, 181 open issues, no push since 2026-09-18 |
+| Alice-Marx/dsh-model-router | 961 | Task → reviewable plan → model / CLI selection + multi-Bot workspace | Routes **models**, not the four presets; the most mature distribution (npm + three plugin directories) |
+| GraySilver/dsh-evolve-modes | 200 | Composable work state / thinking strategy / quality gates + human-reviewed self-evolution | Composes **ways of working**; has CI and pinned-version checks |
+| jiazz197-cmyk/omd-dsh | 10 | 7 custom modes + per-mode model routing | **Creates** modes, does not **choose** one |
+
+Two conclusions from that table, neither flattering:
+
+1. **The largest project with our exact goal has four stars** — and that is the switcher, not a
+   judge. The demand's greatest common divisor is **not** "choose a preset": it is consumed by
+   layer 2. The 7029-star solution assumes "install it and never think about it again"; the
+   961-star one assumes "let the plugin pick the model too". This plugin assumes the user will
+   type a sentence, read a reason, then click. Of the three, ours asks for the most.
+2. **Depth and adoption are uncorrelated on this track.** The high-star projects pin their
+   kernel range and break when the kernel moves; this plugin uses a loose range and tracks
+   0.2.2. Nobody installs a plugin that costs an extra click because its `engines` range is loose.
 
 The kernel has no such capability: `modeSelectionEnabled` is a deprecated field that the
 docs explicitly say is neither read nor written. This plugin is not a duplicate: it does
 not hard-code capability differences (the composition is parsed from the installed
 kernel's preset YAML, with a build-time baseline and optional live refresh), explains
-its reasoning, and pins no kernel version.
+its reasoning, and pins no kernel version. **Whether it is the right thing to build depends
+on whether the interaction cost can drop to the level of the 7029-star class** — that is
+written up with the scoring in `docs/benchmark-2026-11-16.md`.
 
 ## Decision principle
 
