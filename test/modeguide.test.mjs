@@ -305,10 +305,18 @@ test('纯净基线归极简模式', () => {
 
 test('两个强信号冲突时必须交 LLM，不能硬选一个', () => {
   // 没有点名任何工具，但两个模式的「任务特征」都命中了。
-  const result = recommendByRules('这个插件要批量处理这批文件')
+  const result = recommendByRules('给侧栏加个按钮，然后批量处理这批文件')
   assert.equal(result.kind, 'unknown', '创造与 PTC 的特征同时命中，本地不该给结论')
   assert.equal(result.mode, null)
   assert.match(result.reason, /冲突/)
+
+  // 反向对照：0.2.2 用的旧样本「这个插件要批量处理这批文件」现在**不再**是冲突 ——
+  // 「插件」只是宾语，不是「要碰 DSH 本体」的证据（0.2.3 从 strong 降为对象名）。
+  // 结论因此变成 PTC 定案：批量处理是明说的，插件只是被谈论的东西。
+  // 这条断言锁住的是「降级真的生效了」，不是「碰巧还能过」。
+  const nowPtc = recommendByRules('这个插件要批量处理这批文件')
+  assert.equal(nowPtc.kind, 'decided')
+  assert.equal(nowPtc.mode, 'ptc')
 })
 
 test('用户点名要某个工具时，指令压过任务特征（不再判成冲突）', () => {
@@ -361,7 +369,7 @@ test('LLM 结论只在本地拿不准时才被采用', () => {
 })
 
 test('本地 unknown 时采用 LLM 结论', () => {
-  const undecided = recommendByRules('这个插件要批量处理这批文件')
+  const undecided = recommendByRules('给侧栏加个按钮，然后批量处理这批文件')
   assert.equal(undecided.kind, 'unknown')
   const verdict = composeVerdict(undecided, { mode: 'cordis', reason: '写插件是核心诉求', confidence: 0.8 }, 'ptc')
   assert.equal(verdict.mode, 'cordis')
@@ -763,7 +771,12 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
       effect: (fn) => { fn(); return () => {} },
       slots: {
         inject: (_name, cb) => { cb(); return () => {} },
-        register: (_opts, render) => { renderFn = render; return {} },
+        // 一个插件可以注册两个 slot（工具栏入口 + 设置卡）。桩只认工具栏那个：
+        // 谁最后注册谁当主入口的话，设置卡会静默顶掉浮层，判据全红而实现是对的。
+        register: (opts, render) => {
+          if (!opts || opts.name === 'conversation.input.left') renderFn = render
+          return {}
+        },
       },
       // 真机 cordis facade：未 inject 的 service 访问**抛异常**，`?.` 拦不住。
       // 报错文案与宿主 reflect.ts 逐字一致。
@@ -966,7 +979,7 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
     '写首诗已能本地定案，不该再发模型请求')
   assert.ok(containsText(poem, '没有任何一项是这个任务所必需的'))
   const conflict = await renderWith(true, {
-    draft: '这个插件要批量处理这批文件', expectedMode: 'PTC 模式', llmFallback: true,
+    draft: '给侧栏加个按钮，然后批量处理这批文件', expectedMode: 'PTC 模式', llmFallback: true,
   })
   assert.ok(conflict.__fetches.filter(([, method]) => method === 'POST').length > 0,
     '信号冲突必须真的问模型')
@@ -1009,7 +1022,7 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
 
   // 配额用光：界面要说清「还要等多久」，而不是笼统说「模型没回应」。
   const limited = await renderWith(true, {
-    draft: '这个插件要批量处理这批文件', expectedMode: 'PTC 模式', llmFallback: true,
+    draft: '给侧栏加个按钮，然后批量处理这批文件', expectedMode: 'PTC 模式', llmFallback: true,
     judgeResponse: { status: 429, body: { ok: false, error: 'rate-limited', retryAfterMs: 12000 } },
   })
   await settle()
@@ -1072,14 +1085,14 @@ test('能力表以基线为准，实时读取只做后台校正，失败完全�
   assert.match(fn, /extraIds/, 'roster 里多出来的预设要追加成新列')
   assert.ok(!/error:/.test(fn), 'refineMatrix 不许再产出任何错误态')
 
-  const judge = adapter.slice(adapter.indexOf('const runJudge = async () =>'), adapter.indexOf('// 应用：只在空白会话出现'))
+  const judge = adapter.slice(adapter.indexOf('const runJudge = async (override) =>'), adapter.indexOf('// 应用：只在空白会话出现'))
   assert.match(judge, /matrix: baseline/, '第一次 setState 就把基线画出来')
   assert.ok(!/presetTimeout|presetErrorPrefix|busyPresets/.test(judge), '不许再渲染「预设读不到」或核对状态')
   assert.match(judge, /withTimeout\(refineMatrix\(props\.ctx\), PRESET_TIMEOUT_MS, null\)\.then\(/, '实时校正在后台，失败返回 null 不打扰用户')
 })
 
 /** 在 vm 里加载真实产物，拿到 adapter 导出的纯函数 —— 与真机同一份代码。 */
-function loadClient() {
+function loadClient(reactOverride) {
   let factory = null
   const sandbox = {
     window: { __ModuleLoader__: { load: (spec) => { factory = spec.factory } } },
@@ -1095,7 +1108,7 @@ function loadClient() {
     fetch: async () => ({ ok: true, status: 200, json: async () => ({}) }),
   }
   vm.runInNewContext(readText('client.js'), sandbox)
-  const react = {
+  const react = reactOverride || {
     createElement: () => null,
     useState: () => [null, () => {}],
     useEffect() {},
@@ -1166,7 +1179,7 @@ function findNode(nodes, id) {
 
 test('本地结论在第一次 await 之前就 setState，任何 Remote 都不许挡在前面', () => {
   const adapter = readText('adapter.js')
-  const start = adapter.indexOf('const runJudge = async () =>')
+  const start = adapter.indexOf('const runJudge = async (override) =>')
   const end = adapter.indexOf('// 应用：只在空白会话出现')
   assert.ok(start !== -1 && end > start, '必须能定位到 runJudge')
   const fn = adapter.slice(start, end)
@@ -1197,7 +1210,8 @@ test('浮层按实测高度定位，箭头不会被 overflow 裁掉', () => {
 
 test('图标入口、hover 提示与 reduced-motion 都在产物里', () => {
   const built = readBuilt()
-  assert.match(built, /'aria-label': t\('triggerAria'\)/, '图标按钮必须有可访问名称')
+  assert.match(built, /'aria-label': badge \?/, '有徽标时 aria-label 必须把建议说出来（读屏用户看不到它）')
+  assert.match(built, /t\('triggerAria'\)/, '图标按钮必须有可访问名称')
   assert.match(built, /'npie-mg-tipbox'/, 'hover 说明挂到 body，避开工具栏 overflow 裁剪')
   assert.match(built, /role: 'tooltip'/)
   assert.match(built, /prefers-reduced-motion:reduce/)
@@ -1884,7 +1898,7 @@ test('理由里的能力事实一律现算：改坏差异表，理由必须跟�
 
 test('三种来源都有两句理由，英文界面不混中文', () => {
   const rules = composeVerdict(recommendByRules('给我写个插件'), null, 'ptc')
-  const llm = composeVerdict(recommendByRules('这个插件要批量处理这批文件'),
+  const llm = composeVerdict(recommendByRules('给侧栏加个按钮，然后批量处理这批文件'),
     { mode: 'cordis', reason: '写插件是核心诉求', confidence: 0.8 }, 'ptc')
   const fallback = composeVerdict(recommendByRules('看看这个项目'), null, 'ptc')
   const cases = [
@@ -2073,8 +2087,162 @@ test('README 不再把「默认写死 ptc」列为已知边界', () => {
 const ALL_MODES = ['minimal', 'standard', 'ptc', 'cordis']
 const evalMain = JSON.parse(readText('test/eval/cases.json'))
 const evalHeldout = JSON.parse(readText('test/eval/cases-heldout.json'))
+const EXTERNAL_FILES = ['test/eval/external.json', 'test/eval/external-2.json', 'test/eval/external-3.json']
 const judgeOne = (text, def = 'standard') =>
   composeVerdict(recommendByRules(text, { available: ALL_MODES }), null, def)
+
+test('输入即显示：徽标只在「规则定案 + 与默认不同 + 面板没开」时出现', () => {
+  const { computeInputHint } = loadClient()
+  assert.equal(typeof computeInputHint, 'function', '徽标判定必须挂出纯函数给判据验')
+
+  // 1) 规则定案且与默认不同 → 出现。
+  const cordis = computeInputHint('帮我写个插件，给侧栏加个按钮', { defaultMode: 'standard' })
+  assert.ok(cordis, '本地规则已定案，就该在按钮上直接说出来，不用点开面板')
+  assert.equal(cordis.mode, 'cordis')
+
+  // 2) 与当前默认相同 → 不出现。「建议：你正在用的模式」是自相矛盾，比不说更糟。
+  assert.equal(computeInputHint('帮我写个插件，给侧栏加个按钮', { defaultMode: 'cordis' }), null)
+
+  // 3) 面板开着 → 不出现：结论区已经说全了，按钮上再来一句就是两处说法。
+  assert.equal(computeInputHint('帮我写个插件，给侧栏加个按钮', { defaultMode: 'standard', open: true }), null)
+
+  // 4) 拿不准 → 不出现。徽标只走本地规则，拿不准还硬给建议会逼用户去判断一个猜测。
+  assert.equal(computeInputHint('看看这个项目', { defaultMode: 'standard' }), null)
+  // 5) 太短的草稿 → 不出现（半句话在哪个模式下都成立）。
+  assert.equal(computeInputHint('写个插件', { defaultMode: 'standard' }), null)
+
+  // 反向对照：把门槛降到 0，同一个短句立刻出结论 —— 证明门槛真的在挡东西。
+  assert.ok(computeInputHint('写个插件', { defaultMode: 'standard', minChars: 0 }),
+    '门槛是承重的：minChars=0 时短句也会被算成建议')
+})
+
+test('设置卡：读值不恒真、不可写不假扮可写、越界不写', () => {
+  // 这个用例要真的看到元素树，所以给 loadClient 一个会建树的 React 桩。
+  const treeReact = {
+    createElement: (type, props, ...children) => ({ type, props: props || {}, children: children.flat(Infinity) }),
+    useState: (init) => [typeof init === 'function' ? init() : init, () => {}],
+    useEffect() {},
+    useRef: () => ({ current: null }),
+  }
+  const { settingsCardView, ROW_CONFIG_KEY } = loadClient(treeReact)
+  const t = (key) => ({ settingsFallback: '允许问模型', settingsTimeout: '超时', settingsHint: '改完生效', settingsUnavailable: '宿主没下发设置' }[key] || key)
+  const walk = (node, out = []) => {
+    if (!node || typeof node !== 'object') return out
+    out.push(node)
+    for (const child of node.children || []) walk(child, out)
+    return out
+  }
+  const byType = (tree, type) => walk(tree).find((n) => n.type === type)
+  const checkbox = (tree) => walk(tree).find((n) => n.props && n.props.type === 'checkbox')
+  const numberInput = (tree) => walk(tree).find((n) => n.props && n.props.type === 'number')
+
+  // 1) 命名空间没下发：明说，不许画一个改不动的假表单。
+  const off = settingsCardView({ status: 'unavailable' }, {}, t)
+  assert.match(byType(off, 'p').children.join(''), /宿主没下发设置/)
+
+  // 2) 读值：`llmFallback: false` 必须真显示成未勾选。
+  //    写成 Boolean(value.llmFallback) 的地方在这里一定翻红 —— 这正是文档里
+  //    「volatile 引用恒真」在客户端的同型陷阱。
+  const writes = []
+  const falsy = settingsCardView({ status: 'ready', writable: true, value: { llmFallback: false, timeoutMs: 5000 } },
+    { set: (k, v) => writes.push([k, v]) }, t)
+  assert.equal(checkbox(falsy).props.checked, false, 'false 就是 false，不能不勾')
+  assert.equal(numberInput(falsy).props.value, '5000')
+  // 勾上要写出 true；超时改到合法值才写。
+  checkbox(falsy).props.onChange({ target: { checked: true } })
+  numberInput(falsy).props.onChange({ target: { value: '9000' } })
+  assert.deepEqual(writes, [['llmFallback', true], ['timeoutMs', 9000]])
+
+  // 3) 缺省（undefined）= 默认开启：只有明确 false 才不勾。
+  const missing = settingsCardView({ status: 'ready', writable: true, value: {} }, { set: () => {} }, t)
+  assert.equal(checkbox(missing).props.checked, true, '缺省应当按「默认开启」画')
+  assert.equal(numberInput(missing).props.value, '20000', '缺省超时按 20000 画，不许画 NaN')
+
+  // 4) 只读：控件 disabled，且点击也写不出去。
+  const roWrites = []
+  const readonly = settingsCardView({ status: 'ready', writable: false, value: { llmFallback: true } },
+    { set: (k, v) => roWrites.push([k, v]) }, t)
+  assert.equal(checkbox(readonly).props.disabled, true)
+  assert.equal(numberInput(readonly).props.disabled, true)
+
+  // 5) 越界不写：宿主 schema 会拒绝，用户看到的是「保存没反应」，不如根本不发。
+  const bounds = []
+  const bounded = settingsCardView({ status: 'ready', writable: true, value: { timeoutMs: 20000 } },
+    { set: (k, v) => bounds.push([k, v]) }, t)
+  numberInput(bounded).props.onChange({ target: { value: '10' } })
+  numberInput(bounded).props.onChange({ target: { value: '' } })
+  numberInput(bounded).props.onChange({ target: { value: '999999' } })
+  assert.deepEqual(bounds, [], '越界/空值一律不发')
+
+  // 6) key 必须与 cordis.patch.yml 的行 id 一致：不一致时卡片静默消失（不报错）。
+  const patch = readText('cordis.patch.yml')
+  const rowId = /-\s*id:\s*([a-z0-9-]+)/.exec(patch)[1]
+  assert.equal(ROW_CONFIG_KEY, `dsh-npie-modeguide#${rowId}`,
+    '设置卡的 key 与宿主行 id 对不上时，卡片会静默不出现')
+})
+
+test('宿主 schema 的 volatile 字段就是设置页要改的那几个', async () => {
+  const host = await import('../index.js')
+  assert.equal(typeof host.Config, 'function', '必须导出 Config：没有它宿主就不服务设置命名空间')
+  const instance = host.Config({ llmFallback: false, timeoutMs: 5000, provider: '', model: '' })
+  // volatile 字段在 apply 里是引用对象：裸读恒真，所以必须经 normalizeConfig 解包。
+  assert.equal(typeof instance.llmFallback.get, 'function', 'volatile 字段应当是引用对象')
+  const cfg = host.normalizeConfig(instance, { reflect: { get: () => null } })
+  assert.equal(cfg.llmFallback, false, 'volatile 里的 false 解包后必须还是 false')
+  assert.equal(cfg.timeoutMs, 5000)
+  // 反向对照：裸读会拿到恒真对象 —— 这就是为什么 normalizeConfig 必须存在。
+  assert.equal(Boolean(instance.llmFallback), true, '裸读恒真（这就是坑本身）')
+})
+
+test('徽标不花配额：判定路径里没有任何网络调用', () => {
+  const src = readText('adapter.js')
+  const start = src.indexOf('export function computeInputHint')
+  const end = src.indexOf('按 id 取短名（徽标用）')
+  assert.ok(start !== -1 && end > start, '必须能截到 computeInputHint')
+  const fn = src.slice(start, end)
+  assert.ok(!/fetch\(|askHost|stats|feedback/.test(fn), '徽标判定不许发请求：它每 500ms 就可能跑一次')
+  assert.match(fn, /recommendByRules/, '只走本地规则')
+  // 组装修线也要在：纯函数算得对，没人调用也是白搭。
+  assert.match(src, /computeInputHint\(draft, \{ open, defaultMode: currentDefaultMode\(\), available \}\)/,
+    'effect 必须真的调用这个纯函数')
+  assert.match(src, /'data-hint': String\(Boolean\(badge\)\)/, '按钮要能被判据认出来是「有建议」状态')
+  assert.match(src, /t\('suggestPrefix'\)/, '徽标文案走词典，中英都要有')
+})
+
+test('外部集是真实说法：来源标注、脱敏、不参与卡线', () => {
+  for (const file of EXTERNAL_FILES) {
+    const rows = JSON.parse(readText(file))
+    assert.ok(rows.length >= 20, `${file} 太少（${rows.length}），算出来的百分比没有意义`)
+    for (const row of rows) {
+      assert.equal(row.origin, 'real', `${file} 里的用例必须标明来自真实说法`)
+      assert.ok(row.why, `${file} 里「${row.text}」缺标注意图，判错时无从归因`)
+      // 脱敏：真实会话里出现过本地路径、站点域名、带 token 的链接 —— 都不许进仓库。
+      assert.ok(!/\/Users\/|\/home\/|token=|https?:\/\//.test(row.text),
+        `${file} 里「${row.text}」没脱敏（路径 / 链接 / token）`)
+    }
+  }
+  // 卡线集与外部集必须是两份文件：写在同一份里，改规则就等于在体温计上加热。
+  const sources = readText('scripts/eval.mjs')
+  assert.match(sources, /readSet\('test\/eval\/external\.json', 'external', false\)/,
+    '外部集必须显式标成不卡线（第三个参数 false）')
+  assert.match(sources, /readSet\('test\/eval\/cases\.json', 'main', true\)/, '卡线集必须显式标 true')
+})
+
+test('外部集有错判时不改变退出码；`--gate-external` 才卡', async () => {
+  const { spawnSync } = await import('node:child_process')
+  const run = (args) => spawnSync(process.execPath, ['scripts/eval.mjs', ...args], {
+    cwd: join(ROOT, '..'), encoding: 'utf8',
+  })
+  const plain = run([])
+  assert.equal(plain.status, 0, '卡线集全绿时，外部集的错判不许把构建打红')
+  // 没有错判时这条判据会退化成恒真式，所以先确认「确实有错判被印出来」。
+  const hasMiss = /MISS \[external\d*\]/.test(plain.stdout)
+  if (!hasMiss) {
+    assert.match(plain.stdout, /\[eval:external\d*\] \d+\/\d+/, '至少要有外部集分数行')
+  }
+  const gated = run(['--gate-external'])
+  assert.equal(gated.status, hasMiss ? 1 : 0, '--gate-external 必须让外部集真的卡线')
+})
 
 test('评测集规模够用：≥40 条、≥10 条「不该换」、中英都有', () => {
   const all = [...evalMain, ...evalHeldout]
@@ -2141,13 +2309,73 @@ test('排错 / 查看类描述一律不换模式，且不发模型请求', () =>
     assert.equal(local.noToolNeed, true, `「${text}」是排错，应当场判定不换（不白问模型）`)
     assert.equal(judgeOne(text).mode, 'standard')
   }
-  // 反向对照：摘掉反向词表，「装了个插件为什么没生效」立刻就变成创造模式。
+  // 反向对照：摘掉反向词表，同一句立刻就变成创造模式。
+  //
+  // 样本换成了「打不开 + 修一下」：0.2.3 把「插件」从 strong 降级之后，
+  // 「我装了个插件，为什么没生效」即使没有反向词表也判不出 cordis 了（正确），
+  // 那条样本就失去了对照力 —— 换个真能证明反向词表是**承重**的句子。
   const blind = loadRecommender((s) => {
-    const b = s.replace('const reverse = hits(text, REVERSE_RULES)', 'const reverse = []')
+    const b = s.replace('const reverse = demanding ? [] : hits(text, REVERSE_RULES)', 'const reverse = []')
     assert.notEqual(b, s, '反向词表接缝替换没命中')
     return b
   })
-  assert.equal(blind.recommendByRules('我装了个插件，为什么没生效？', { available: ALL_MODES }).mode, 'cordis')
+  assert.equal(blind.recommendByRules('我的插件打不开了，帮我修一下', { available: ALL_MODES }).mode, 'cordis')
+})
+
+test('「插件」只是宾语，不是要改宿主的证据（0.2.3 降级）', () => {
+  // 全部来自真实会话日志，不是编的：它们都含「插件」，但一句都不需要 cordis 工具。
+  for (const text of [
+    '查一下这个插件有没有更新',
+    '帮我卸载这个插件',
+    '两个插件同时装会不会打架',
+    '我如何才能重新构建打包插件',
+    '记得更新该插件的版本号',
+    '插件之间的依赖和权限现在怎么管',
+  ]) {
+    const local = recommendByRules(text, { available: ALL_MODES })
+    assert.notEqual(local.mode, 'cordis', `「${text}」不该被判成创造模式`)
+    assert.equal(judgeOne(text).mode, 'standard', `「${text}」应当留在默认`)
+  }
+  // 反向对照：把「插件」加回 strong，同一批立刻变回误判 —— 证明降级真的承重。
+  const back = loadRecommender((s) => {
+    const b = s.replace("support: ['cordis', 'mcp', 'hook'],", "strong: ['插件'],\n    support: ['cordis', 'mcp', 'hook'],")
+    assert.notEqual(b, s, 'strong 回填没命中')
+    return b
+  })
+  assert.equal(back.recommendByRules('帮我卸载这个插件', { available: ALL_MODES }).mode, 'cordis')
+})
+
+test('否定动词不算动作：先不改动 / 不要修改', () => {
+  // 「先不改动，如果把插件迁走会有什么影响」—— 有一个「改」，但意思是别动。
+  const evaluate = recommendByRules('我先问你，先不改动，如果把插件迁到另一个目录，会有什么影响', { available: ALL_MODES })
+  assert.equal(evaluate.noToolNeed, true, '这是评估请求，不是动手')
+  assert.equal(judgeOne('我先问你，先不改动，如果把插件迁到另一个目录，会有什么影响').mode, 'standard')
+
+  // A-not-A 疑问式里的「不」不是否定：「这个功能能不能做成插件」仍在要求做。
+  assert.equal(judgeOne('这个功能能不能做成插件').mode, 'cordis')
+
+  // 正向对照（同词、无否定）：动作真在，就该定案。有这一条，上面两条才不是恒真式。
+  assert.equal(judgeOne('把插件的加载顺序改一下，按依赖排序').mode, 'cordis')
+
+  // 复合词：「加载」里的「加」不是「加东西」—— 子串匹配的经典坑。
+  // 这句话只有一个「加载」，却被判成「要加」，正是 VERB_COMPOUNDS 存在的理由。
+  assert.equal(judgeOne('插件的加载顺序是什么，说清楚即可').mode, 'standard')
+})
+
+test('「可以增加哪些功能」是在问可能性，不是派活', () => {
+  // 冻结盲测抓到的误判：一问「能加什么」就被推进创造模式，然后用户被换走了。
+  assert.equal(judgeOne('深度研究下这个项目，针对我的桌面端可以做哪些工作、可以增加哪些功能').mode, 'standard')
+  // 同一位用户真派活时是这样说的 —— 两句只差在语气上，规则必须分开。
+  assert.equal(judgeOne('给设置页增加 4 个建议示例卡').mode, 'cordis')
+})
+
+test('清理一批 vs 整理一份：分界在「对象是不是成批的」', () => {
+  assert.equal(judgeOne('清理空壳目录、旧备份目录、274 个断链').mode, 'ptc')
+  // 注意：句子里带上「打不开 / 不能访问」这类反向词时会压回默认 —— 见下方已知限制。
+  assert.equal(judgeOne('整理我本机浏览器的书签，删掉已经不能访问的').mode, 'ptc')
+  // 反向：同一批动词碰上单个文档就不该换模式（这条曾经让卡线集当场红过）。
+  assert.equal(judgeOne('整理一下这个表格').mode, 'standard')
+  assert.equal(judgeOne('删除这段代码').mode, 'standard')
 })
 
 test('英文规则真的能判：pinned 生效，否定也生效（含弯引号）', () => {
@@ -2274,6 +2502,17 @@ test('反馈闭环：只收白名单字段、只写本机、写不进去不谎�
   assert.equal(record.at, '2026-11-16T00:00:00.000Z', '时间由宿主写，不采信请求体')
   assert.ok(!('恶意字段' in record), '请求体里的额外字段一律丢弃')
   assert.equal(typeof record.ruleVersion, 'string', '要记下这条反馈出自哪套规则')
+
+  // hits：错例聚类唯一的抓手。请求体不可信，所以照样只收字符串、限长限量。
+  const withHits = normalizeFeedback({
+    thumb: 'down',
+    input: '帮我卸载这个插件',
+    hits: ['插件', '', '  ', 42, null, 'a'.repeat(80), 'x', 'y', 'z'],
+  }, () => 'now')
+  assert.deepEqual(withHits.hits.slice(0, 1), ['插件'])
+  assert.ok(withHits.hits.length <= 6, '最多 6 个命中词，别让一条记录撑大文件')
+  assert.ok(withHits.hits.every((w) => typeof w === 'string' && w.length <= 24), '每个词限 24 字')
+  assert.deepEqual(normalizeFeedback({ thumb: 'down', hits: 'not-an-array' }, () => 'now').hits, [])
   // 反向对照：thumb 不是 up/down 就整条拒绝，不许默认成「判对了」。
   assert.equal(normalizeFeedback({ thumb: 'maybe' }), null)
   assert.equal(normalizeFeedback(null), null)
@@ -2392,6 +2631,39 @@ test('stats 口径：没有记录时采纳率是未知而不是 0，坏行要报
   assert.equal(parsed.records.length, 2, '坏行要跳过，好行照收')
   assert.equal(parsed.badLines, 1, '坏了几行必须能说出来')
   assert.equal(summarize(parsed.records, { badLines: parsed.badLines }).badLines, 1)
+})
+
+test('错例聚类：同一个词带偏的三条合成一类，并给出「该改哪条规则」', async () => {
+  const { clusterWrong, summarize } = await import('../scripts/stats.mjs')
+  const wrong = [
+    // 三条同一错法：都是被「插件」这个宾语带进创造模式。
+    { mode: 'cordis', signal: 'strong', hits: ['插件'], defaultMode: 'standard', input: '帮我卸载这个插件' },
+    { mode: 'cordis', signal: 'strong', hits: ['插件'], defaultMode: 'ptc', input: '这个插件有没有更新' },
+    { mode: 'cordis', signal: 'strong', hits: ['插件'], defaultMode: 'standard', input: '打包插件怎么弄' },
+    // 另一类：该换却没换。
+    { mode: 'ptc', signal: 'none', hits: [], defaultMode: 'standard', input: '清理空壳目录' },
+  ]
+  const clusters = clusterWrong(wrong)
+  assert.equal(clusters.length, 2, '同类错法必须合并，否则看到的永远是「又错了」')
+  const top = clusters[0]
+  assert.equal(top.count, 3)
+  assert.equal(top.trigger, '插件')
+  assert.match(top.because, /宾语/, '归因要落到「这个词被当成了动作证据」')
+  assert.match(top.action, /降/, '结论要能直接指导改规则')
+  assert.equal(top.examples.length, 2, '每类留两条原文就够看')
+
+  // summarize 要把 hits 带进 wrong：不带，聚类就只能按信号分，归因退化成废话。
+  const summary = summarize([
+    { thumb: 'down', mode: 'cordis', signal: 'strong', hits: ['插件'], input: 'x' },
+  ])
+  assert.deepEqual(summary.wrong[0].hits, ['插件'])
+
+  // 反向对照：结论与默认值相同的那类**不该**被算成「被词带偏」——
+  // 它其实是「不换」被用户否掉，改规则没用，得看默认值。
+  const sameDefault = clusterWrong([
+    { mode: 'standard', signal: 'weak', hits: ['整理'], defaultMode: 'standard', input: '整理一下' },
+  ])
+  assert.match(sameDefault[0].because, /默认值/)
 })
 
 test('浮层可访问性：aria-modal 声明了就必须真把 Tab 关在里面', () => {

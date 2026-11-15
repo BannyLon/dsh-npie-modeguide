@@ -6,6 +6,7 @@
   "ui": {
     "trigger": "模式推荐",
     "triggerAria": "模式推荐：描述任务，判断该用哪个 Agent 预设",
+    "suggestPrefix": "建议：",
     "sheetTitle": "模式推荐",
     "close": "关闭",
     "hint": "把任务写下来，只在需要某个模式独有的工具时才建议换。",
@@ -58,6 +59,10 @@
     "statsAvg": "模型平均耗时",
     "statsFeedback": "反馈",
     "statsUnavailable": "宿主没给出统计（这次运行可能还没走过判定）。",
+    "settingsFallback": "规则拿不准时，允许问一次模型",
+    "settingsTimeout": "单次判定超时（毫秒）",
+    "settingsHint": "改动立刻生效，并写进当前 profile 的配置。",
+    "settingsUnavailable": "宿主没把这行的设置下发给界面（旧版本宿主，或插件行 id 与设置命名空间不一致）。",
     "mode_minimal": "极简模式",
     "mode_standard": "标准模式",
     "mode_ptc": "PTC 模式",

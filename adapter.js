@@ -51,6 +51,18 @@
  */
 
 const PKG = 'dsh-npie-modeguide'
+
+/**
+ * 宿主 loader 里的行 id，也就是设置命名空间的名字。
+ *
+ * `cordis.patch.yml` 里那条 `- id: npie-modeguide` 是**契约**：宿主按 entry.id 服务
+ * 设置命名空间，客户端 `configForms.get(entryId)` 认的也是它。两处任何一个改了，
+ * 设置卡片会静默消失（`get()` 返回 unavailable），不会报错。
+ */
+const ROW_ID = 'npie-modeguide'
+
+/** 插件页里「这一行」的配置卡 key：`<包名>#<行 id>`，与先例一致。 */
+const ROW_CONFIG_KEY = `${PKG}#${ROW_ID}`
 const JUDGE_PATH = '/api/npie-modeguide/judge'
 const CONFIG_PATH = '/api/npie-modeguide/config'
 const FEEDBACK_PATH = '/api/npie-modeguide/feedback'
@@ -99,6 +111,22 @@ const BUILTIN_DEFAULT_MODE = 'ptc'
  * 所以这个间隔的差别不在读盘成本，而在「面板长开时一小时问宿主多少次」。
  */
 const DEFAULT_MODE_POLL_MS = 12000
+
+/**
+ * 「输入即显示」的防抖窗口。
+ *
+ * 打字时每一键都判一次会把 CPU 烧在没人看的地方；停手 500ms 才判，用户根本察觉不到
+ * 延迟（他本来也不会在打第一个字时看工具条）。
+ */
+const INPUT_HINT_DEBOUNCE_MS = 500
+
+/**
+ * 太短的草稿不出徽标。
+ *
+ * 「帮我」「改一下」这类半句在任何模式下都成立，给它们挂一个「建议：创造」只会
+ * 制造噪声 —— 而且噪声会训练用户无视徽标，那比没有徽标更糟。
+ */
+const INPUT_HINT_MIN_CHARS = 8
 /** 官方 list() 兜底读取的上限：它内部可能 await loader.await() 永不返回。 */
 const DEFAULT_LIST_TIMEOUT_MS = 1200
 
@@ -178,6 +206,14 @@ const CSS = `
 .npie-mg-trigger:active{transform:scale(.94)}
 .npie-mg-trigger:focus-visible{box-shadow:0 0 0 2px var(--dsw-focus-ring-color,#6d3bf5)}
 .npie-mg-trigger[data-armed="true"]{background:rgba(109,59,245,.2)}
+/* 有建议时按钮变宽：图标 + 一句话。宽度靠内容，不写死，中文英文都放得下。 */
+.npie-mg-trigger[data-hint="true"]{width:auto;gap:4px;padding:0 9px 0 5px}
+.npie-mg-badge{font-size:11px;line-height:1;font-weight:600;white-space:nowrap;letter-spacing:.2px}
+/* 设置卡：宿主插件页里的表单，尺寸交给宿主，这里只管对齐与行距。 */
+.npie-mg-card{display:flex;flex-direction:column;gap:8px;padding:4px 0}
+.npie-mg-card-row{display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.5}
+.npie-mg-card-row input[type="number"]{width:88px;padding:2px 6px;border:1px solid rgba(109,59,245,.28);border-radius:6px;background:transparent;color:inherit;font:inherit}
+.npie-mg-card-note{margin:0;font-size:11px;line-height:1.5;opacity:.72;color:var(--dsw-alias-label-secondary,#6b6579)}
 .npie-mg-tipbox{position:fixed;z-index:2147483100;transform:translate(-50%,-100%);padding:4px 8px;border-radius:6px;background:#252232;color:#f7f5ff;font-size:11px;line-height:1.4;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px rgba(20,16,36,.22);animation:npie-mg-fade 140ms ease-out both}
 @keyframes npie-mg-fade{from{opacity:0}to{opacity:1}}
 .npie-mg-pop{position:fixed;z-index:2147483000;width:min(380px,calc(100vw - 24px));max-height:min(520px,calc(100vh - 48px));display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l1,rgba(120,110,150,.2));border-radius:13px;background:var(--dsw-alias-bg-layer-1,#fdfcff);color:var(--dsw-alias-label-primary,#1c1a24);box-shadow:0 1px 2px rgba(24,20,40,.05),0 14px 38px rgba(24,20,40,.13);font:inherit;font-size:12.5px;line-height:1.5;animation:npie-mg-in 180ms cubic-bezier(.22,1,.36,1) both}
@@ -582,6 +618,149 @@ function modeShortLabel(column, t) {
   return column.name || column.id
 }
 
+/**
+ * 「输入即显示」的判定本身：纯函数，不碰 DOM、不发请求。
+ *
+ * 抽出来是为了能直接验 —— 徽标的行为（什么时候出现、什么时候闭嘴）才是这个功能的
+ * 全部内容，而渲染桩里的 `useEffect` 是空实现，验不到。放到这里之后，
+ * 「与默认相同就不显示」「拿不准就不显示」「面板开着就不显示」都能一条一条断言。
+ *
+ * @param {string} draft 输入框里的草稿
+ * @param {{open?: boolean, defaultMode?: string|null, available?: string[], minChars?: number}} [options]
+ * @returns {{mode: string, signal: string, evidence: string[]}|null}
+ */
+export function computeInputHint(draft, options = {}) {
+  const text = typeof draft === 'string' ? draft.trim() : ''
+  const opts = options && typeof options === 'object' ? options : {}
+  const minChars = Number.isFinite(opts.minChars) ? opts.minChars : INPUT_HINT_MIN_CHARS
+  // 面板开着时让位给完整结论；草稿太短时闭嘴（半句话在哪个模式下都成立）。
+  if (opts.open === true || text.length < minChars) return null
+  const available = Array.isArray(opts.available) && opts.available.length
+    ? opts.available
+    : PRESET_BASELINE.columns.map((column) => column.id)
+  const local = recommendByRules(text, { available })
+  // 只有本地规则**定案**才出徽标：suggest / unknown 都意味着「拿不准」，
+  // 而拿不准时既不该打扰用户，也不该为了一个徽标去调模型。
+  if (local.kind !== 'decided' || !local.mode) return null
+  // 与当前默认相同 = 不用换。这时候「建议：X」是错的，X 本来就是当前模式。
+  if (typeof opts.defaultMode === 'string' && opts.defaultMode && local.mode === opts.defaultMode) return null
+  return { mode: local.mode, signal: local.signal, evidence: local.evidence }
+}
+
+/**
+ * 设置卡的纯视图：只依赖「快照 + 动作 + 词典」，不碰 ctx、不碰 DOM。
+ *
+ * 抽成纯函数是为了能验 —— 设置页在真机里跑，判据进不去；而这张卡最容易错的地方
+ * 恰恰是**读值**：`llmFallback` 读到 `undefined` 时若写成 `Boolean(x)` 就恒真，
+ * 用户明明关掉了却显示勾上。所以这里写 `value.llmFallback !== false`
+ * （只有明确 false 才不勾），并让判据逐条断这三种情形。
+ *
+ * @param {object|null} snapshot `configForms` 的快照：{status, value, writable}
+ * @param {{set?: (field: string, value: unknown) => void}} actions
+ * @param {(key: string) => string} t
+ */
+export function settingsCardView(snapshot, actions, t) {
+  const h = React.createElement
+  const text = typeof t === 'function' ? t : fallbackText
+  const status = snapshot && typeof snapshot.status === 'string' ? snapshot.status : 'unavailable'
+  // 命名空间没被宿主服务（旧宿主 / 行 id 不一致）：明说，而不是画一个改不动的假表单。
+  if (status === 'unavailable') {
+    return h('p', { className: 'npie-mg-card-note' }, text('settingsUnavailable'))
+  }
+  const value = snapshot && snapshot.value && typeof snapshot.value === 'object' ? snapshot.value : {}
+  const writable = !snapshot || snapshot.writable !== false
+  const set = actions && typeof actions.set === 'function' ? actions.set : () => undefined
+  const timeout = Number(value.timeoutMs)
+  return h('div', { className: 'npie-mg-card', 'data-status': status },
+    h('label', { className: 'npie-mg-card-row' },
+      h('input', {
+        type: 'checkbox',
+        checked: value.llmFallback !== false,
+        disabled: !writable,
+        onChange: (event) => set('llmFallback', event.target.checked === true),
+      }),
+      h('span', null, text('settingsFallback')),
+    ),
+    h('label', { className: 'npie-mg-card-row' },
+      h('span', null, text('settingsTimeout')),
+      h('input', {
+        type: 'number',
+        min: 1000,
+        max: 120000,
+        step: 1000,
+        value: String(Number.isFinite(timeout) && timeout > 0 ? timeout : 20000),
+        disabled: !writable,
+        // 越界不写：写进去会让宿主侧 schema 校验失败，用户看到的是「保存没反应」。
+        onChange: (event) => {
+          const next = Number(event.target.value)
+          if (Number.isFinite(next) && next >= 1000 && next <= 120000) set('timeoutMs', next)
+        },
+      }),
+    ),
+    h('p', { className: 'npie-mg-card-note' }, text('settingsHint')),
+  )
+}
+
+/**
+ * 插件页里「本行」的配置卡。
+ *
+ * 订阅一次、把快照交给纯视图渲染：字段改了就地重画，不用关页面。
+ */
+function SettingsCard(props) {
+  const t = props.t || fallbackText
+  const form = props.form
+  const [snapshot, setSnapshot] = React.useState(() => (
+    form && typeof form.getSnapshot === 'function' ? form.getSnapshot() : null
+  ))
+  React.useEffect(() => {
+    if (!form || typeof form.subscribe !== 'function') return undefined
+    const off = form.subscribe(() => setSnapshot(form.getSnapshot()))
+    return () => {
+      if (typeof off === 'function') off()
+    }
+  }, [])
+  return settingsCardView(snapshot, {
+    set: (field, value) => {
+      if (form && typeof form.set === 'function') void form.set(field, value)
+    },
+  }, t)
+}
+
+/**
+ * 机会性取 `configForms`。
+ *
+ * 不写进 `inject`：旧宿主没有这个服务，写进去会让整个浏览器半区 `pending`，
+ * 连浮层都不出来 —— 为了一个设置卡把主功能弄没了，是本末倒置。
+ */
+function settingsForm(ctx) {
+  try {
+    const forms = ctx && typeof ctx.get === 'function' ? ctx.get('configForms') : null
+    if (!forms || typeof forms.get !== 'function') return null
+    return forms.get(ROW_ID) || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 按 id 取短名（徽标用）。
+ *
+ * `modeShortLabel` 要一个能力表列对象，而徽标是在打开面板之前算出来的 —— 那时
+ * 能力表可能还没合成（第一次用），也可能只有基线的四列。所以这里按 id 查词典，
+ * 查不到再回落到列名，最后才用 id 本身：徽标宁可显示英文 id，也不能空着。
+ */
+function shortModeLabel(id, t, matrix) {
+  if (typeof id !== 'string' || !id) return ''
+  const key = MODE_SHORT_KEYS[id]
+  if (key) {
+    const value = t(key)
+    if (value && value !== key) return value
+  }
+  const columns = matrix && Array.isArray(matrix.columns) ? matrix.columns : []
+  const column = columns.find((item) => item && item.id === id)
+  return (column && column.name) || modeLabel(id, t, matrix) || id
+}
+
 /** 用一条已知含汉字的词条反查界面语言，不猜宿主 locale 服务的 API。 */
 function uiLang(t) {
   return /[\u4e00-\u9fff]/.test(t('mode_ptc')) ? 'zh' : 'en'
@@ -656,6 +835,14 @@ function ModeGuide(props) {
   // 最后一次判断的原文：默认模式改了要按新值重算两句理由，不能拿空输入框去算。
   const judgedTextRef = React.useRef('')
   const [pos, setPos] = React.useState({ left: 8, top: 8, arrowLeft: 24, maxHeight: 400, placement: 'above' })
+  /**
+   * 输入即显示的建议。null = 没有建议（不显示任何东西）。
+   *
+   * 只由**本地规则**产生 `kind === 'decided'` 的结论，所以：
+   *   - 不花配额、不发网络请求（决定不了就什么都不显示）；
+   *   - 与当前默认模式相同就不显示 —— 那等于「不用换」，说它只是噪音。
+   */
+  const [hint, setHint] = React.useState(null)
 
   // 这两个 hook 是 selector hook，必须传 (s) => s。详见文件头第 5 条。
   const inputState = typeof props.useInput === 'function' ? props.useInput((s) => s) : undefined
@@ -667,10 +854,43 @@ function ModeGuide(props) {
   // 只有空白会话能切换预设：agentPresets.select 对已开始的会话会拒绝。
   const canApply = Boolean(sessionId) && Boolean(session && session.blank === true)
 
+  /**
+   * 输入即显示：草稿停手 500ms 判一次，只走本地规则。
+   *
+   * 依赖里必须有 `open`：面板一开，徽标就得让位给完整结论，否则同一个按钮上
+   * 出现两处说法。也不能在草稿为空时留着上一次的徽标 —— 用户可能刚把字删光。
+   *
+   * 判定只用 `rosterModeIds() || 基线列`：与正式判断同源，避免「徽标说创造、
+   * 打开之后说标准」这种自相矛盾。
+   */
+  const hintDelay = typeof props.hintDelayMs === 'number' ? props.hintDelayMs : INPUT_HINT_DEBOUNCE_MS
+  React.useEffect(() => {
+    const text = draft.trim()
+    if (open || text.length < INPUT_HINT_MIN_CHARS) {
+      setHint(null)
+      return undefined
+    }
+    const timer = setTimeout(() => {
+      const available = rosterModeIds() || PRESET_BASELINE.columns.map((column) => column.id)
+      const next = computeInputHint(draft, { open, defaultMode: currentDefaultMode(), available })
+      if (!next) {
+        setHint(null)
+        return
+      }
+      setHint((prev) => (prev && prev.mode === next.mode ? prev : { mode: next.mode }))
+    }, hintDelay)
+    return () => clearTimeout(timer)
+  }, [draft, open, defaultMode, hintDelay])
+
   const openSheet = () => {
-    setInput((prev) => (prev.trim() ? prev : draft))
+    const seed = input.trim() ? input : draft
+    setInput(seed)
     setTip(false)
     setOpen(true)
+    // 有徽标 = 本地规则已经定过案了，展开时直接把结论与理由画出来，
+    // 用户不用再点一次「判断」。**只在这种情况下自动判**：规则拿不准时没有徽标，
+    // 也就不会因为「打开看一眼」而白发一次模型请求。
+    if (hint && seed.trim()) void runJudge(seed)
   }
   const close = () => {
     judgeSeq.current += 1 // 作废在飞的判断，避免关闭后再 setState
@@ -848,8 +1068,8 @@ function ModeGuide(props) {
    *   ② 后台静默尝试实时预设校正（成功才替换表，理由也按新表重算，失败无感）；
    *   ③ 只有信号冲突 / 信息不足才问模型，带硬超时；失败保留结论并说明原因。
    */
-  const runJudge = async () => {
-    const text = input.trim()
+  const runJudge = async (override) => {
+    const text = (typeof override === 'string' ? override : input).trim()
     if (!text) return
     const seq = ++judgeSeq.current
     setApplyNote(null)
@@ -990,6 +1210,9 @@ function ModeGuide(props) {
           mode: current.mode,
           source: current.source,
           signal: current.local && current.local.signal ? current.local.signal : null,
+          // 命中的原词：错例聚类唯一的抓手。没有它，`--cluster` 只能说「又错了 3 次」，
+          // 说不出「这 3 次都是被同一个『插件』带跑的」—— 而后者才是能改的东西。
+          hits: current.local && Array.isArray(current.local.evidence) ? current.local.evidence.slice(0, 6) : [],
           defaultMode: currentDefaultMode(),
           lang: uiLang(t),
         }),
@@ -1019,20 +1242,28 @@ function ModeGuide(props) {
   const verdict = state.verdict
   const matrix = state.matrix
 
+  // 徽标：把「建议」直接写在按钮上，不弹面板。点击仍走同一条路（展开面板读理由）。
+  const hintLabel = hint ? shortModeLabel(hint.mode, t, matrixRef.current) : ''
+  const badge = hint && !open
+    ? h('span', { className: 'npie-mg-badge', 'data-mode': hint.mode }, t('suggestPrefix') + hintLabel)
+    : null
+
   const trigger = h('button', {
     type: 'button',
     ref: anchorRef,
     className: 'npie-mg-trigger',
     'data-armed': String(open),
+    'data-hint': String(Boolean(badge)),
     'aria-haspopup': 'dialog',
     'aria-expanded': open,
-    'aria-label': t('triggerAria'),
+    // 徽标是视觉信息，读屏用户只能听到 aria-label：不带进来说等于没做这个功能。
+    'aria-label': badge ? `${t('suggestPrefix')}${hintLabel}，${t('triggerAria')}` : t('triggerAria'),
     onMouseEnter: showTip,
     onMouseLeave: () => setTip(false),
     onFocus: showTip,
     onBlur: () => setTip(false),
     onClick: () => (open ? close() : openSheet()),
-  }, h(ModeIcon, { size: 18 }))
+  }, h(ModeIcon, { size: 18 }), badge)
 
   const tipNode = tip && !open
     ? h('div', { className: 'npie-mg-tipbox', role: 'tooltip', style: { left: tipPos.left, top: tipPos.top } }, t('trigger'))
@@ -1270,6 +1501,13 @@ module.exports = {
   refineMatrix,
   readRoster,
   modeLabel,
+  // 输入即显示：徽标的判定是纯函数，判据直接验它的四个边界。
+  computeInputHint,
+  shortModeLabel,
+  INPUT_HINT_MIN_CHARS,
+  // 设置卡：视图是纯函数，判据验「读值不恒真 / 不可写不假扮可写」。
+  settingsCardView,
+  ROW_CONFIG_KEY,
   apply(ctx) {
     const t = makeTranslator(ctx)
 
@@ -1293,5 +1531,24 @@ module.exports = {
         if (typeof off === 'function') off()
       }
     }, 'dsh-npie-modeguide: composer slot')
+
+    /**
+     * 设置卡：挂到插件页「本行」的配置位。
+     *
+     * slot 名与 key 都是契约：`plugins.row.config` 没被声明时回调**根本不执行**
+     * （不报错），key 与行 id 不一致时卡片静默不出现。所以两处都写成常量并挂出来，
+     * 判据可以直接比对它们与 `cordis.patch.yml` 的 id 是否一致。
+     */
+    ctx.effect(() => {
+      if (typeof ctx.slots.inject !== 'function') return undefined
+      const off = ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
+        name: 'plugins.row.config',
+        key: ROW_CONFIG_KEY,
+        locale: PKG,
+      }, (cardProps) => React.createElement(SettingsCard, { ...cardProps, t, form: settingsForm(ctx) })))
+      return () => {
+        if (typeof off === 'function') off()
+      }
+    }, 'dsh-npie-modeguide: settings card')
   },
 }

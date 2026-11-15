@@ -33,6 +33,31 @@ import { buildLlmPrompt, parseLlmVerdict, PROMPT_VERSION } from './src/recommend
 // 白名单只有这一份：浏览器半区构建时内联同一个文件，两处不许各写一遍。
 // 宿主只关心形状（自定义预设也合法），「是不是内置四个」由规则引擎与词典使用。
 import { isModeId } from './src/presets.js'
+import z from '@deepseek-ai/schemastery'
+
+/**
+ * 插件配置的 schema（0.2.3 新增）。
+ *
+ * 为什么要有它：宿主只把**标了 `.volatile()` 的字段**投影成设置命名空间
+ * （`projectForm` 返回 undefined 时 `describe()` 整条丢弃）。没有 schema 的插件
+ * 在设置页里根本不存在 —— 用户只能手改 `cordis.patch.yml`，改完还得重启。
+ *
+ * 标 `.volatile()` 还带来第二个好处：新值**原地提交进正在运行的 fiber**
+ * （`config.llmFallback` 变成可 `.get()` 的引用对象），所以设置页改完立刻生效，
+ * 不用重启。代价是 apply 里不能裸读——`normalizeConfig` 已经统一解包。
+ *
+ * 行 id（`npie-modeguide`）就是命名空间，客户端用 `configForms.get('npie-modeguide')`
+ * 拿到的就是这张表单；改 id 必须同时改客户端。
+ */
+export const Config = z.object({
+  /** 本地规则拿不准时，是否调一次模型兜底。关掉后行为完全离线。 */
+  llmFallback: z.boolean().default(true).volatile(),
+  /** 单次判定超时（毫秒）。超时退回本地建议，不让界面一直转圈。 */
+  timeoutMs: z.number().default(20000).volatile(),
+  /** 调模型时用的 provider / model。留空 = 跟随「设置 → 模型」的默认模型。 */
+  provider: z.string().default('').volatile(),
+  model: z.string().default('').volatile(),
+})
 
 /** 判定路由。客户端 POST 这里。 */
 export const JUDGE_PATH = '/api/npie-modeguide/judge'
@@ -364,6 +389,11 @@ export function normalizeFeedback(raw, now = () => new Date().toISOString()) {
     source,
     signal: str(body.signal, 24) || null,
     defaultMode: str(body.defaultMode, 64) || null,
+    // 命中的原词：错例聚类靠它把「又错了」变成「又被同一个词带跑了」。
+    // 只收字符串、只留 6 个、每个最多 24 字 —— 客户端是浏览器，请求体不可信。
+    hits: Array.isArray(body.hits)
+      ? body.hits.filter((w) => typeof w === 'string' && w.trim()).slice(0, 6).map((w) => w.trim().slice(0, 24))
+      : [],
     lang: body.lang === 'en' ? 'en' : 'zh',
     // 规则/提示词版本：没有它，三个月后没人能分清这条反馈是哪套规则下产生的。
     ruleVersion: PROMPT_VERSION,

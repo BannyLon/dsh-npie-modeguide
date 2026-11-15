@@ -1,7 +1,7 @@
 {
   "name": "dsh-npie-modeguide",
-  "version": "0.2.2",
-  "private": true,
+  "version": "0.3.0",
+  "private": false,
   "type": "module",
   "description": "用自然语言描述任务，自动判断该用哪个 Agent 预设（标准 / PTC / 极简 / 创造）。本地规则优先，拿不准时才调一次模型；能力对照表从当前版本内核预设解析。",
   "license": "MIT",
@@ -71,5 +71,23 @@
   "devDependencies": {
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.19.0"
+  },
+  "author": {
+    "name": "Banny",
+    "url": "https://github.com/BannyLon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BannyLon/dsh-npie-modeguide.git"
+  },
+  "homepage": "https://github.com/BannyLon/dsh-npie-modeguide#readme",
+  "bugs": {
+    "url": "https://github.com/BannyLon/dsh-npie-modeguide/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

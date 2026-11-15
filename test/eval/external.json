@@ -1,0 +1,240 @@
+[
+  {
+    "text": "请继续执行任务",
+    "expect": "default",
+    "why": "续跑指令，任务类型完全在上文；任何模式都不缺能力，结论只能是「不换」",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "按你的建议来",
+    "expect": "default",
+    "why": "采纳建议，单看没有任何能力线索",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "太复杂了，三两句话回答",
+    "expect": "default",
+    "why": "对上一轮的追问收敛，不是新任务",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "上一条发错了，不要理会",
+    "expect": "default",
+    "why": "元指令（撤回），不该被判成任何任务",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "算了，这两个功能都暂时放弃了，不做了",
+    "expect": "default",
+    "why": "取消需求，不是要动手",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "更新readme",
+    "expect": "default",
+    "why": "单点小改，四个模式都能做，没有独有能力缺失",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "记得更新该插件的版本号，我们迭代了几处功能",
+    "expect": "default",
+    "why": "改一个数字加提交，不需要任何模式独有能力；「插件」在这里只是宾语，不是要碰 DSH 本体",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "git 仓库，全部提交",
+    "expect": "default",
+    "why": "运维动作，一条命令的事",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "为什么背景颜色不统一",
+    "expect": "default",
+    "why": "排错提问：用户要的是理解现状，不是要某个独有工具",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "读个正常的网址就读不出来？",
+    "expect": "default",
+    "why": "排错 + 情绪，任务是「为什么读不出」，不是要换工具",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "插件之间的依赖和权限现在怎么管，同时装两个会不会打架",
+    "expect": "default",
+    "why": "纯问答：解释机制，不改任何代码。带「插件」但不需要 cordis 工具",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "我如何才能重新构建/打包插件",
+    "expect": "default",
+    "why": "how-to 问答，答案是几条命令",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "插件已挂进 web profile，你是不是挂错了，应该挂进桌面端",
+    "expect": "default",
+    "why": "排错 + 纠正安装位置：要动的是 profile 挂载，不是插件源码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "查看某个第三方插件是否有更新",
+    "expect": "default",
+    "why": "查询一件事，读一下版本号即可",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "请帮我卸载这个第三方插件，卸载插件和删除数据",
+    "expect": "default",
+    "why": "卸载是包管理动作（插件管理工具在标准模式），不是写插件；判成创造是典型误伤",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "我感觉首页还不够惊艳，操作略复杂，交互动画做得不够好，另外特别吃内存，这一条不优化根本没法用",
+    "expect": "default",
+    "why": "体验反馈 + 缺陷清单，属于排错/评估，不是要某个独有工具",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "全站只在专题页下，滚动时导航不固定且顶部条不隐藏",
+    "expect": "default",
+    "why": "缺陷描述，先要定位不要动工",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "Please continue with the conversation based on the summarized context above.",
+    "expect": "default",
+    "why": "英文续跑指令，等价于「请继续」",
+    "lang": "en",
+    "origin": "real"
+  },
+  {
+    "text": "写的不够清楚明白，小白根本就看不懂，写的小白也能看懂",
+    "expect": "default",
+    "why": "对文风的返工要求，标准模式就能做",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "针对这次升级总结一段文案，以警示大家更新，也对想更新的人一点帮助，我要发朋友圈",
+    "expect": "default",
+    "why": "写一段文案：纯写作，不涉及工作流编排也不涉及批量文件",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "帮我写一段朋友圈分享文案，说明我终于把 harness 改造成了我喜欢的样子，效果还不错",
+    "expect": "default",
+    "why": "短文案写作，标准模式足够",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "对插件从功能完整性，以及哪些存在矛盾、存在隐患等进行核查与优化",
+    "expect": "cordis",
+    "why": "「优化插件」= 要改插件源码，只有创造模式带改 DSH 本体的工具",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "你研究下这个项目的实现方法，我自己也开源了几个技能，是不是也可以集成到一起，做一个插件",
+    "expect": "cordis",
+    "why": "明确要「做一个插件」，缺了 cordis 工具做不了",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "给我这个插件的设置选项卡增加一个复选框：选中就自动注入跨会话内容，不选就是检索 0 条",
+    "expect": "cordis",
+    "why": "给插件加界面控件，属于加界面 / 改 DSH 本体",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "如果我只做增加 4 个建议示例卡，其它都不变，可以不",
+    "expect": "cordis",
+    "why": "加界面元素（示例卡），只有创造模式能改宿主界面",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "修主题插件选择器",
+    "expect": "cordis",
+    "why": "要改主题插件的代码，缺了 cordis 工具改不动",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "该主题能不能添加类似「专家 / 技能 / 连接器」的入口，我特别需要这个功能",
+    "expect": "cordis",
+    "why": "给主题加界面入口，属于加界面",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "整本一次加载不是扯淡吗？我读到哪你怎么记录？肯定是一节一页，而且目录要按章节跳转",
+    "expect": "cordis",
+    "why": "要求改阅读器插件的行为（分页与目录），落点是插件源码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "为什么我的桌面端缺少一个基础功能：编辑历史消息并重新生成，改一下前面某条提问从那里重新跑",
+    "expect": "cordis",
+    "why": "表面是「为什么」，实质是要求给宿主补一个能力 —— 要改 DSH 本体。这条同时测反向词表会不会把真需求压没",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "清理空壳目录、69 MB 的旧备份目录、274 个断链",
+    "expect": "ptc",
+    "why": "批量处理一批文件，标准模式的 bash 也能做，但几百条得逐个查，属于 PTC 存在的理由",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "你能帮我整理我本机浏览器的书签吗，现在好乱，删除已经不能访问的，修复归类错误",
+    "expect": "ptc",
+    "why": "批量处理几百条记录并逐条判定，正是 execute 代码执行要解决的量级",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "文章缓存里还留着 3 个已不在订阅列表的源，清理掉吧",
+    "expect": "ptc",
+    "why": "在一批缓存记录里做批量清理与对账",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "整理一版干净的部署包",
+    "expect": "ptc",
+    "why": "从一堆积压文件里筛出该发布的，属于批量文件处理",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "check which models I downloaded on this machine and which AI tool each one is tied to, I need to decide what to delete",
+    "expect": "ptc",
+    "why": "英文批量扫盘 + 逐个归类，同样落在 PTC 的量级上",
+    "lang": "en",
+    "origin": "real"
+  }
+]

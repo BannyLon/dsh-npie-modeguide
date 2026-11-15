@@ -10,6 +10,7 @@
  *   npm run stats -- --file /path/x.jsonl
  *   npm run stats -- --json              # 给别的脚本吃
  *   npm run stats -- --recent 20          # 多看几条错例
+ *   npm run stats -- --cluster            # 错例聚类 + 归因（该改哪条规则）
  *
  * 它不联网，也不读除这份文件以外的任何东西。
  */
@@ -63,6 +64,8 @@ export function summarize(records, meta = {}) {
         mode: item.mode || null,
         source: item.source || null,
         signal: item.signal || null,
+        // 老记录（0.2.2 之前）没有 hits：聚类会退回按信号分，别当成本条错例损坏。
+        hits: Array.isArray(item.hits) ? item.hits.filter((w) => typeof w === 'string') : [],
         defaultMode: item.defaultMode || null,
         ruleVersion: item.ruleVersion || null,
       })
@@ -82,6 +85,81 @@ export function summarize(records, meta = {}) {
     byVersion,
     wrong: wrong.reverse(),
   }
+}
+
+/**
+ * 错例聚类 + 归因。
+ *
+ * 为什么需要它：`--recent` 只把错例原文列出来，看完仍然不知道「该改哪一条规则」。
+ * 归因的前提是**把同类错法合并**：三条都被同一个「插件」带跑的错，是一个 bug，
+ * 不是三个。
+ *
+ * 聚类的键是「判出的模式 + 第一个命中词」，没有命中词时退回「模式 + 信号」。
+ * 归因（`because`）用的是**能落到规则改动上**的说法，不是「模型不准」这种废话：
+ *
+ *   - `宾语被当成动作证据` → 那个词要降级（strong → 对象名）
+ *   - `只有一条线索就定案` → 门槛太低，或该词该降级
+ *   - `该换却没换：无信号` → 缺词，需要按这一类说法补
+ *   - `排错语境被当成需求` → 反向词表漏了这类说法
+ *   - `否定没识别` → 否定词表漏词
+ *   - `与该模式默认值相同` → 不是错判换模式，而是用户不认同默认值 → 不改规则
+ *
+ * @param {object[]} wrong `summarize().wrong`
+ * @returns {{key: string, mode: string|null, trigger: string|null, signal: string|null,
+ *   count: number, because: string, action: string, examples: object[]}[]}
+ */
+export function clusterWrong(wrong) {
+  const list = Array.isArray(wrong) ? wrong : []
+  const buckets = new Map()
+
+  /** 「宾语类」词：出现只能说明话题，不能说明要动手。 */
+  const OBJECT_WORDS = ['插件', 'plugin', '面板', 'panel', '侧栏', 'sidebar', '主题', 'theme', '预设', 'preset', 'skill', '技能']
+  const NEGATION = /(不|别|没|勿|无需|不用)/
+
+  for (const item of list) {
+    if (!item || typeof item !== 'object') continue
+    const hits = Array.isArray(item.hits) ? item.hits.filter((w) => typeof w === 'string' && w) : []
+    const trigger = hits[0] || null
+    const mode = item.mode || null
+    const signal = item.signal || null
+    const key = trigger ? `${mode || '?'}+${trigger}` : `${mode || '?'}+${signal || 'none'}`
+    if (!buckets.has(key)) buckets.set(key, { key, mode, trigger, signal, count: 0, examples: [] })
+    const bucket = buckets.get(key)
+    bucket.count += 1
+    if (bucket.examples.length < 2) {
+      bucket.examples.push({ input: String(item.input || '').slice(0, 60), defaultMode: item.defaultMode || null })
+    }
+  }
+
+  const out = []
+  for (const bucket of buckets.values()) {
+    const sample = bucket.examples[0] || { input: '', defaultMode: null }
+    let because = '其它：需要人工看原文归因'
+    let action = '看下面两条原文，判断是缺词还是语义读错'
+    if (bucket.mode && sample.defaultMode && bucket.mode === sample.defaultMode) {
+      // 「判成默认」在记录里等于「没换模式」——那是用户不认同默认值，不是规则错。
+      because = '与该模式默认值相同：结论是「不换」'
+      action = '别改规则；看是默认值不合适，还是用户以为该换'
+    } else if (bucket.signal === 'reverse') {
+      because = '排错语境被当成了需求'
+      action = '把这类说法补进 REVERSE_RULES'
+    } else if (bucket.trigger && NEGATION.test(bucket.trigger)) {
+      because = '否定没识别'
+      action = '检查 verbPresent 的否定窗口'
+    } else if (bucket.signal === 'strong' && bucket.trigger && OBJECT_WORDS.includes(bucket.trigger)) {
+      because = `宾语被当成动作证据（「${bucket.trigger}」单独出现就定案）`
+      action = `把「${bucket.trigger}」从 strong 降成对象名，只留「动作 + 对象」组合`
+    } else if (bucket.signal === 'weak' || bucket.signal === 'strong') {
+      because = '只有一条线索就给了结论'
+      action = '提高门槛（要两条证据），或把这个词降级'
+    } else if (bucket.signal === 'none') {
+      because = '该换却没换：没有任何信号'
+      action = '按这两条原文补词（注意别把纯文本任务也带进去）'
+    }
+    out.push({ ...bucket, because, action })
+  }
+  // 多的排前面：改一条能少错很多次的优先。
+  return out.sort((a, b) => b.count - a.count)
 }
 
 /**
@@ -145,9 +223,29 @@ function printReport(summary, file) {
   group('按判出的模式', summary.byMode)
   group('按规则版本', summary.byVersion)
   if (summary.wrong.length) {
-    console.log('  最近的错例（拿去补进 test/eval/cases.json）：')
+    console.log('  最近的错例（拿去补进 test/eval/cases.json；想看「该改哪条规则」加 --cluster）：')
     for (const item of summary.wrong.slice(0, 5)) {
       console.log(`    · [${item.mode || '?'}] ${item.input.slice(0, 60)}`)
+    }
+  }
+}
+
+/** `--cluster` 的输出：按「一类错法」打印，每条带归因和该改什么。 */
+function printClusters(summary) {
+  const clusters = clusterWrong(summary.wrong)
+  if (!clusters.length) {
+    console.log('  没有错例可聚类。')
+    return
+  }
+  console.log(`  错例聚类（${summary.wrong.length} 条 → ${clusters.length} 类）`)
+  for (const item of clusters) {
+    const head = `${item.count} 次 · 判成 ${item.mode || '?'}`
+    const trigger = item.trigger ? ` · 触发词「${item.trigger}」` : ''
+    console.log(`    ${head}${trigger}`)
+    console.log(`      归因：${item.because}`)
+    console.log(`      怎么改：${item.action}`)
+    for (const example of item.examples) {
+      console.log(`      例：${example.input}`)
     }
   }
 }
@@ -179,6 +277,8 @@ function main(argv = process.argv.slice(2)) {
     return 0
   }
   printReport(summary, file)
+  // 聚类单独一段，不挤掉总数与分布：先看「错了多少」，再看「该改哪条」。
+  if (args.includes('--cluster')) printClusters(summary)
   return 0
 }
 

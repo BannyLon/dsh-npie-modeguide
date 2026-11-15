@@ -101,14 +101,83 @@ export const MODE_RULES = Object.freeze([
       // 折叠」「给这个按钮换个颜色」都没带「加 / 改」，原先只落到线索、判成不换。
       // 它们单看很泛（「让他看看」），配上 DSH 内部对象才成立 —— 这正是组合判据的用途。
       verbs: ['加', '改', '做', '写', '新增', '增加', '删掉', '去掉', '定制', '换成', '换',
-        '让', '设置', '调整', '隐藏', '折叠',
-        'add', 'edit', 'write', 'remove', 'change', 'customize'],
+        '让', '设置', '调整', '隐藏', '折叠', '修', '修复', '补上', '迁移', '优化',
+        // 「修一下」是反向词（排错），但「修主题插件选择器」是明确的改动指令：
+        // 区别在于后面跟的是不是 DSH 内部对象 —— 这正是组合判据存在的意义。
+        'add', 'edit', 'write', 'remove', 'change', 'customize', 'fix', 'migrate', 'optimize'],
+      // 一句之内成立即可，不要求紧邻：真实说法常把动作放在句子后半
+      // （「技能市场和 MCP 市场里的卡片也改成两列显示」）。
+      // 跨句仍不算 —— 那多半是两件事。
+      scope: 'sentence',
+      // 对象必须是**宿主里的具体构件**。样式类（边距 / 间距 / 字号 / 配色）也算：
+      // 「整体左右边距统一小一号，左右对称」是明确的改界面，通篇却没有「插件」二字。
       objects: ['面板', '界面', '按钮', '侧栏', '侧边栏', '主题', '皮肤', '预设', '插件', '快捷键',
-        '开关', '菜单', '图标', '输入框', '工具栏', 'panel', 'sidebar', 'button', 'theme', 'preset', 'plugin', 'shortcut', 'toolbar'],
+        '开关', '菜单', '图标', '输入框', '工具栏', '布局', '边距', '间距', '样式', '配色', '字号', '字体',
+        // `注册`/`api` 是宿主侧的接缝名：「把宿主侧的 settings 注册按新 API 改一版」
+        // 说的就是改插件代码。
+        '注册', 'api', 'settings',
+        'panel', 'sidebar', 'button', 'theme', 'preset', 'plugin', 'shortcut', 'toolbar', 'layout', 'style'],
+    }, {
+      /**
+       * 第二组：**需求动词 + 宿主行为**。
+       *
+       * 「功能 / 交互 / 行为 / 入口」不能配第一组那些通用动词（做 / 写 / 加）：
+       * 「交互动画做得不够好」「这两个功能都暂时放弃了」立刻被推成创造模式 ——
+       * 实测两条都是纯误伤。它们要配的是「缺少 / 补上 / 改成」这类**要求**，
+       * 才等于「要改宿主行为」。
+       *
+       * 「增加 / 添加」也不能配 `功能`：「深度研究下这个项目可以做哪些工作、
+       * 可以增加哪些功能」是在**问可能性**，不是在派活 —— 这一条来自冻结批次的
+       * 盲测，不是想出来的。所以它们下面单独一组，只配具体构件。
+       */
+      verbs: ['缺少', '缺个', '补上', '要有', '做成', '实现', '支持', '改成'],
+      objects: ['功能', '交互', '行为', '卡片', 'feature'],
+    }, {
+      // 「加一个具体东西」：动词可以宽，对象必须是宿主里能指认的构件。
+      verbs: ['增加', '添加', '加一个', '加个', '补上'],
+      objects: ['入口', '卡片', '示例卡', '菜单项'],
+    }, {
+      /**
+       * 视觉微调：量词/对齐词 + 样式对象。
+       *
+       * 「整体左右边距统一小一号，两边要对称：左边 20px，右边 20px」通篇没有
+       * 「插件 / 界面 / 按钮」，只有度量（边距 / 间距 / 字号 / 配色）—— 它仍然
+       * 是改宿主界面。曾经把「统一」放进通用动词里凑这条，结果
+       * 「插件路径应该统一放在哪个目录下」被判成改插件 —— 所以动词必须是
+       * **视觉量词**，不能是「统一」这种也能表示「一律」的词。
+       */
+      verbs: ['小一号', '大一号', '小两号', '对齐', '对称', '一致', '改成', '换成', '调整'],
+      objects: ['边距', '间距', '字号', '配色', '字体', '圆角', '宽度', '高度'],
+      scope: 'sentence',
     }],
-    // 「插件」单独出现就足以说明要碰 DSH 本体 —— 但必须先排除排错语境（见 REVERSE_RULES）。
-    strong: ['插件', 'plugin'],
-    support: ['cordis', 'mcp', 'hook', '预设', 'preset', 'skill', '技能', '面板', 'panel', 'sidebar', '侧栏'],
+    /**
+     * `strong: []` —— 「插件」从 strong 降级，是本文件 0.2.3 最重要的一处修正。
+     *
+     * 0.2.2 把「插件」当 strong：单条即定案。可它在**真实说法**里多数是宾语，
+     * 而不是「要碰 DSH 本体」的证据：
+     *
+     *   查一下这个插件有没有更新 / 帮我卸载这个插件 / 两个插件会不会打架 /
+     *   我如何才能重新构建打包插件 / 记得更新该插件的版本号
+     *
+     * 这五句一句都不需要 cordis 工具，判成创造就是纯误伤 —— 而它们全来自
+     * 真实会话日志（`test/eval/external.json`），不是我们编的刁难句。这正是
+     * 「存在性 ≠ 有效性」在规则层的版本：词出现了，但它证明不了那件事。
+     *
+     * 现在它只是**半条证据**（support，要凑够两条），而「要碰 DSH 本体」由另外
+     * 两个更强的证据承担：`pinned`（用户点名「写插件」）与 `pairs`（动作 + DSH
+     * 内部对象）。两条都比它更接近「缺了它做不了」。
+     */
+    strong: [],
+    /**
+     * 只剩「技术词」留在这里：`cordis` / `mcp` / `hook` 出现就说明话题在宿主内部。
+     *
+     * 「插件 / skill / 预设 / 面板 / 侧栏」这些**对象名**全部移出 —— 它们单独凑够
+     * 两条就会定案，而真实说法里两条对象名并存太常见了：
+     * 「还有 skill 的路径，插件我现在路径也是乱七八糟」被判成创造模式，
+     * 可它要的只是「告诉我放哪」。对象名留在 `pairs.objects` 里就够了：
+     * 那里必须同时有动作词才成立，这才是「要改」的证据。
+     */
+    support: ['cordis', 'mcp', 'hook'],
     // 英文弱线索补齐：界面早就双语，规则若只有中文，一半用户拿到的是空功能。
     // 弱线索只算半条，加词的风险远小于 strong —— 但要避免和别的模式撞词。
     weak: ['按钮', 'button', '组件', 'component', 'widget', '图标', 'icon', '主题', 'theme',
@@ -164,10 +233,57 @@ export const MODE_RULES = Object.freeze([
     pairs: [{
       verbs: ['遍历', '遍历一遍', '逐个过'],
       objects: ['目录', '文件夹', '所有文件', '全部文件', '这批文件', '一批文件', '每个文件', '子目录', '目录下'],
+    }, {
+      /**
+       * 收拾一批东西：动词 + **成批的对象**。
+       *
+       * 为什么不能把「整理 / 清理 / 删除」直接放进 support：它们对单个文档同样成立
+       * （「整理一下这个表格」），一放进去就立刻把纯文本任务推进 PTC —— 卡线集当场
+       * 红了一条，反向对照干的活。真实的共同点是「对象是一批东西」：
+       * 书签、缓存、断链、残留、备份、部署包、目录。所以做成组合判据。
+       */
+      verbs: ['整理', '清理', '清掉', '归档', '归类', '删除', '删掉', '对账',
+        // 全量替换 / 逐条核查：一批文件里换掉同一个词、再把外链挨个点一遍，
+        // 正是「标准模式的 bash 也能做，但几百条得全塞进上下文」那种活。
+        '替换', '统一改', '核查', '逐个核查', '比对', '校对',
+        // 英文侧同义动词：界面早就双语，规则只有中文的话英文用户拿到的是空功能。
+        'clean up', 'cleanup', 'remove', 'delete', 'archive', 'replace'],
+      objects: ['目录', '文件夹', '书签', '缓存', '断链', '残留', '备份', '部署包',
+        '所有文件', '全部文件', '这批文件', '一批文件',
+        '外链', '链接', '品牌名', '文件名', '字段', '旧名',
+        // 英文侧：目录 / 文件夹 / 文件。第三批冻结盲测里
+        // 「clean up the six stale temp files under the new ledger directory」
+        // 只拿到半条线索 —— 因为 `directory` 只在弱线索里，凑不成组合。
+        'directory', 'folder', 'files'],
+      scope: 'sentence',
+    }, {
+      /**
+       * 「彻底删掉 / 全删 / 清空」+ 文件 / 任务 / 记录。
+       *
+       * 为什么动词这么窄：`删掉这个文件` 一条 `rm` 就完了，不值得换模式。
+       * 但「旧的 7 个任务可以**彻底删掉**了，删掉不再挂载的文件」是清理一批 ——
+       * 分界就在「彻底 / 全 / 清空」这些量词上，所以只收它们。
+       */
+      verbs: ['彻底删', '全删', '全清', '清空', '批量删', '统一删', '都删', '一起删'],
+      objects: ['文件', '任务', '记录', '条目', '目录', '备份'],
+      scope: 'sentence',
+    }, {
+      /**
+       * 扫本机：「检查我本机下载的模型都有哪些，分别关联什么工具」——
+       * 动词是「检查」这种最普通的词，对象才是关键：本机 / 磁盘 / 下载的 / 安装的。
+       * 配在一起才等于「要遍历这台机器」，而不是「检查这段代码」。
+       */
+      verbs: ['检查', '扫描', '扫一遍', '列出', '统计', '看看', '查一下', '盘一下', '清理'],
+      objects: ['本机', '磁盘', '机器上', '下载的', '安装的', '已安装'],
+      scope: 'sentence',
     }],
     support: ['批量', '遍历', '逐条', '逐个', '去重', '汇总', '筛选', '清洗', '重命名', '分类',
       '合并', '拆分', '全部文件', '所有文件', '脚本', '一次性',
-      'batch', 'bulk', 'dedupe', 'deduplicate', 'aggregate', 'rename', 'merge', 'split', 'filter', 'traverse', 'script'],
+      // 被收拾的对象本身也各算半条：真实说法里「文章缓存里还留着 3 个不在订阅列表
+      // 的源，清理掉吧」只有一条 support，配上组合判据才够。
+      '书签', '缓存', '断链', '残留', '备份', '部署包',
+      'batch', 'bulk', 'dedupe', 'deduplicate', 'aggregate', 'rename', 'merge', 'split', 'filter', 'traverse', 'script',
+      'cleanup', 'clean up', 'archive', 'downloaded', 'delete'],
     // 「统计」只在弱线索里：`grep -c` 一行就数完了，标准模式的 bash 够用。
     // 它原先在 support 里，于是「在这个目录下找所有 .log 并统计条数」被
     // 统计(1) + log + 目录下（两条弱线索 = 1）凑成定案 —— 和「统计表格行数」
@@ -213,6 +329,10 @@ export const REVERSE_RULES = Object.freeze([
   // 免得「写个脚本卸载这个依赖」也被压回默认。
   '卸载了', '卸载掉',
   '看看这个', '看一下这个', '帮我看看', '帮我看一下',
+  // 「先不改动」「先别动」是**明确的止损指令**，不是待办任务。
+  // 真实说法里极常见（「我先问你，先不改动，如果把插件迁走会有什么影响」）：
+  // 后半句的「迁」是真动词，但用户要的是评估，不是现在动手。命中即压回默认。
+  '先不改动', '先别动', '先不要改', '先不要动手', '不要动手', '先不动', '别动',
   // 英文
   'why', 'not working', 'stopped working', 'stops working', "won't start", 'not loading',
   "doesn't work", 'does not work', "don't work", 'error', 'errors',
@@ -252,12 +372,29 @@ const WEB_TARGET = /(网页|页面|网站|前端|组件库|landing page)|(^|[^a-
 const DSH_CONTEXT = /(dsh|deepseek harness|cordis|插件|plugin|预设|preset)/
 
 /**
+ * 需求句式标记。
+ *
+ * 反向词表按「排错语境」压回默认模式，但真实说法里有一类句子**前半句像排错、
+ * 后半句是需求**：「为什么我的桌面端缺少一个基础功能：编辑历史消息并重新生成」。
+ * 只看「为什么」就压回默认，等于把真需求当成排错 —— 而它明确要改宿主。
+ *
+ * 所以反向词前面加一道例外：同时命中「动作 + DSH 内部对象」（pairs）**且**带
+ * 这类要求标记时，不按排错处理，回到正常打分。
+ *
+ * 只在 pairs 已经命中的前提下生效 —— 单独一个「希望」什么都证明不了。
+ */
+const DEMAND = /(缺少|缺个|缺一个|加一个|加个|增加|补上|改成|做成|做到|希望|能不能|可不可以|应该|要能)/
+
+/**
  * 提示词与**规则语义**的版本号。改了提示词、或改了规则能判出的结论，都要 +1。
  *
  * 结论缓存只按 `(版本, 默认模式, 输入, 能力表)` 做键：规则改了而版本不变，旧缓存会
  * 拿着上一套规则的结论冒充新逻辑 —— 用户看到的就是「改了半天还是老答案」。
+ *
+ * 4（0.2.3）：`插件` 从 strong 降为 support、pairs 扩了「修 / 功能 / 交互 / 行为 /
+ * 消息 / 卡片」、ptc 收了清理类动词、反向词让位给需求句式 —— 结论会变，必须换 key。
  */
-export const PROMPT_VERSION = '3'
+export const PROMPT_VERSION = '4'
 
 /**
  * 把文本归一，方便匹配：小写、全角转半角、弯引号转直引号。
@@ -372,11 +509,74 @@ function hits(text, words) {
  * @param {Array<{verbs: string[], objects: string[]}>} pairs
  * @returns {string[]} 命中的对象词（用于给出可复核的证据）。
  */
+/**
+ * 取 `at` 所在的**一句话**。
+ *
+ * 组合判据默认只看对象附近 24 个字符的窗口，这够用来判断「加个面板」，但不够用来
+ * 判断「缓存里还留着 3 个源，清理掉吧」—— 动词在对象**后面**十几字之外，窗口够不到。
+ * 放宽成整句是有意的：同一句里既有「收拾」动词又有成批对象，就是同一个诉求；
+ * 跨句就不算（那多半是两件事）。
+ */
+function sentenceAround(text, at) {
+  let start = 0
+  let end = text.length
+  for (let i = at; i > 0; i -= 1) {
+    if ('。！？!?\n；;'.includes(text[i - 1])) { start = i; break }
+  }
+  for (let i = at; i < text.length; i += 1) {
+    if ('。！？!?\n；;'.includes(text[i])) { end = i; break }
+  }
+  return text.slice(start, end)
+}
+
+/**
+ * 单字动词会命中复合词：`加` 在「加载」里、`改` 在「改写」里。
+ *
+ * 中文没有词边界，`text.indexOf('加')` 必然把「插件的**加载**顺序」当成「加」动作，
+ * 于是「说清加载顺序」被判成「要加东西」。实测这一条把一句纯提问推成了创造模式。
+ * 只排真正的复合词，别排得太宽 —— 排掉「改一版」这种真动词比留着噪声更糟。
+ */
+const VERB_COMPOUNDS = Object.freeze([
+  '加载', '加入', '加油', '加快', '加强', '加大', '加权',
+  '改写', '改编', '改造', '改天', '改进', '改正',
+  '做法', '做梦',
+])
+
+/**
+ * 窗口里是否真的出现了这个动词 —— **被否定的不算**。
+ *
+ * 「我先问你，先不改动，如果把插件统一迁到另一个目录会怎样」里有一个「改」，
+ * 但它被「不」否定，意思是**别动**。旧实现直接 `window.includes('改')`，
+ * 于是「先不改动 + 插件」= 要改插件 = 创造模式，正好把用户的意思读反。
+ *
+ * 只看动词前面 4 个字：中文的否定几乎都紧贴在动词前（不 / 别 / 没 / 勿 / 先不要）。
+ */
+function verbPresent(text, verb) {
+  let from = 0
+  for (;;) {
+    const at = text.indexOf(verb, from)
+    if (at === -1) return false
+    // 复合词直接跳过（「加载」不是「加」）。
+    if (VERB_COMPOUNDS.some((word) => text.startsWith(word, at))) {
+      from = at + 1
+      continue
+    }
+    const before = text.slice(Math.max(0, at - 4), at)
+    // A-not-A 疑问式里的「不」不是否定：「这个功能能不能做成插件」仍在要求做。
+    // 不排除它，这条卡线用例当场红 —— 否定词表最容易踩的就是这个坑。
+    const asking = /(能不能|可不可以|要不要|是不是|会不会|行不行)$/.test(before)
+    const negated = !asking && /(不|别|没|勿|无需|不用|不要)$/.test(before)
+    if (!negated) return true
+    from = at + 1
+  }
+}
+
 function pairHits(text, pairs) {
   const out = []
   for (const pair of Array.isArray(pairs) ? pairs : []) {
     const verbs = Array.isArray(pair?.verbs) ? pair.verbs : []
     const objects = Array.isArray(pair?.objects) ? pair.objects : []
+    const scoped = pair?.scope === 'sentence'
     for (const object of objects) {
       if (!object) continue
       let from = 0
@@ -385,8 +585,10 @@ function pairHits(text, pairs) {
         const at = text.indexOf(object, from)
         if (at === -1) break
         if (boundaryOk(text, at, object) && !isNegated(text, at)) {
-          const window = text.slice(Math.max(0, at - 14), at + object.length + 10)
-          if (verbs.some((verb) => verb && window.includes(verb))) {
+          const window = scoped
+            ? sentenceAround(text, at)
+            : text.slice(Math.max(0, at - 14), at + object.length + 10)
+          if (verbs.some((verb) => verb && verbPresent(window, verb))) {
             out.push(object)
             found = true
           }
@@ -524,7 +726,13 @@ export function recommendByRules(input, options = {}) {
 
   // 第二优先：反向词。排错 / 查看 / 解释现状 —— 用户不是要用独有工具，
   // 而是想理解或修好现状。这类描述的正确答案永远是「留在默认模式」。
-  const reverse = hits(text, REVERSE_RULES)
+  //
+  // 例外：需求句式。「为什么缺少一个基础功能：改一下前面某条提问从那里重新跑」
+  // 既有反向词（为什么）又明确要求改宿主 —— 只看反向词就把真需求压没了。
+  // 例外条件很窄：必须 pairs（动作 + DSH 内部对象）真的命中，且带要求标记。
+  const cordisPairs = scored.find((s) => s.rule.id === 'cordis')
+  const demanding = Boolean(cordisPairs && cordisPairs.pairs.length > 0 && DEMAND.test(text))
+  const reverse = demanding ? [] : hits(text, REVERSE_RULES)
   if (reverse.length) {
     return emptyResult({
       kind: 'unknown',

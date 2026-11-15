@@ -1,8 +1,46 @@
 # dsh-npie-modeguide
 
+[![check](https://github.com/BannyLon/dsh-npie-modeguide/actions/workflows/check.yml/badge.svg)](https://github.com/BannyLon/dsh-npie-modeguide/actions/workflows/check.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-6d3bf5.svg)](LICENSE)
+[![dsh](https://img.shields.io/badge/dsh-%E2%89%A50.1.7--alpha.2-6d3bf5.svg)](https://www.npmjs.com/package/@deepseek-ai/dsh)
+
+English | [中文](README.md)
+
 Not sure which of DeepSeek Harness's four Agent presets (Standard / PTC / Minimal /
 Creative) fits your task? Describe the task in one sentence and this plugin recommends
 one, with **two verifiable sentences** explaining why.
+
+## Install
+
+Installing a dsh plugin takes **two** edits. Doing only the first one looks like it
+worked and silently loads nothing:
+
+```sh
+# 1) put the package into the profile's dependencies (dsh plugin forwards to pnpm)
+dsh plugin --profile desktop add github:BannyLon/dsh-npie-modeguide
+```
+
+```jsonc
+// 2) open ~/.dsh/profiles/desktop/package.json and add the name to bundles
+{
+  "dependencies": { "dsh-npie-modeguide": "github:BannyLon/dsh-npie-modeguide" },
+  "dsh": { "profile": { "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "dsh-npie-modeguide"        // ← without this line the plugin is never loaded
+  ] } }
+}
+```
+
+Then quit and relaunch (`Cmd+Q` on desktop) — the browser half has no hot reload. A mode
+icon appears left of the composer; once you type a task it shows "Suggest: X" directly,
+and clicking it is what opens the reasoning.
+
+For the web profile use `--profile web`; everything else is identical.
+
+For local development, `"dsh-npie-modeguide": "link:/absolute/path"` is easier: rebuild
+with `npm run build` and relaunch (`client.js` is generated — without a rebuild nothing
+changes).
 
 - **Capability table** — parsed from the installed kernel's real preset YAML into a build-time baseline, with a silent live refresh; refreshable after a DSH upgrade.
 - **Explainable, tiered decision** — local rules first, one model call only for genuine ambiguity, and two sentences whose capability facts are computed from the current table.

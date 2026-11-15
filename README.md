@@ -1,7 +1,42 @@
 # dsh-npie-modeguide
 
+[![check](https://github.com/BannyLon/dsh-npie-modeguide/actions/workflows/check.yml/badge.svg)](https://github.com/BannyLon/dsh-npie-modeguide/actions/workflows/check.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-6d3bf5.svg)](LICENSE)
+[![dsh](https://img.shields.io/badge/dsh-%E2%89%A50.1.7--alpha.2-6d3bf5.svg)](https://www.npmjs.com/package/@deepseek-ai/dsh)
+
+[English](README.en.md) | 中文
+
 不知道 DeepSeek Harness 的四个 Agent 预设（标准 / PTC / 极简 / 创造）该用哪个？
 把任务写成一句话，这个插件帮你判断，并给出**两句可复核的理由**说明为什么。
+
+## 安装
+
+装一个 dsh 插件要动**两处**（只做第一处等于没装，而且不报错）：
+
+```sh
+# ① 把包装进 profile 的依赖（dsh plugin 只是把参数转发给 pnpm）
+dsh plugin --profile desktop add github:BannyLon/dsh-npie-modeguide
+```
+
+```jsonc
+// ② 打开 ~/.dsh/profiles/desktop/package.json，把包名加进 bundles
+{
+  "dependencies": { "dsh-npie-modeguide": "github:BannyLon/dsh-npie-modeguide" },
+  "dsh": { "profile": { "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "dsh-npie-modeguide"        // ← 少了这一行，插件不会被加载
+  ] } }
+}
+```
+
+然后**退出重开**（桌面端 `Cmd+Q`）—— 客户端半区没有热更新。输入框左侧出现一个模式
+图标，输入任务之后它会直接显示「建议：X」，点它才展开理由。
+
+web 端把 `--profile desktop` 换成 `--profile web`，其余相同。
+
+本地开发时用 `link:` 更省事：`"dsh-npie-modeguide": "link:/绝对路径"`，改完
+`npm run build` 再重开即可（`client.js` 是构建产物，不构建就不会生效）。
 
 ## 它解决的问题
 

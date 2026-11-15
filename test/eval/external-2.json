@@ -1,0 +1,170 @@
+[
+  {
+    "text": "我一直没明白我这个插件的意义以及应用场景，这个插件应该怎么用算是正确的使用，如何推广宣传。先不要有任何修改，我们先讨论",
+    "expect": "default",
+    "why": "讨论与定位，且明确「先不要修改」—— 要的是判断，不是动手",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "我还是没懂？你用大白话解释，那我这个插件存在的意义是什么？插件的执行流程是什么",
+    "expect": "default",
+    "why": "要求解释（大白话解释），不是要改代码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "还有 skill 的路径，我应该放在哪里？插件我现在路径也是乱七八糟，应该统一放在哪个路径下",
+    "expect": "default",
+    "why": "路径问答；「插件」只是被谈论的对象，回答是给一个目录",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "我先问你，先不改动，如果把插件统一迁到另一个目录，这会对插件的执行有什么变化，会不会产生错误码，还是需要重新注册",
+    "expect": "default",
+    "why": "迁移前评估影响；「先不改动」是明示。判成创造就是被「插件」两个字带跑",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "目前，我五个自制插件的版本号分别是多少",
+    "expect": "default",
+    "why": "读一下版本号，一条命令的事",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "如何把还没重生好的插件从 bundles 里禁用",
+    "expect": "default",
+    "why": "how-to 问答，答案是改一个配置文件",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "我刚才给我的 deepseek harness 安装了一个第三方插件，请帮我卸载这个插件",
+    "expect": "default",
+    "why": "包管理动作（插件管理在标准模式），不是写插件",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "这是原网站和复制后的本地页面，这差距也太明显了",
+    "expect": "default",
+    "why": "对比反馈，属于评估。用户没说要不要改，结论只能是「不换」",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "总结一下桌面端升级更新的原则，清晰提炼，我要撰写一篇科普贴文",
+    "expect": "default",
+    "why": "写作任务，四个模式都能写，没有独有能力缺失",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "深度研究下这个项目，针对我的桌面端可以做哪些工作、可以增加哪些功能",
+    "expect": "default",
+    "why": "研究与选项评估；「可以增加哪些功能」是在列可能性，不是现在就动手",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "给我设计一份详细的对比信息图，先提炼概述两边分别是什么、相同点和不同点、价值和场景、该如何选择，最后一定要做事实核查",
+    "expect": "default",
+    "why": "多段落的写作 + 核查，但没有任何「用工作流 / 扇出子代理」的指令；标准模式本身就能产出",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "请阅读这份安装文档，按照步骤为我安装并配置这个 CLI",
+    "expect": "default",
+    "why": "按文档执行几条命令，标准模式的 bash 够用",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "Read this repository and tell me whether it can be ported into a plugin, and what the necessity and feasibility are",
+    "expect": "default",
+    "why": "英文：先评估再决定，不是现在就写插件",
+    "lang": "en",
+    "origin": "real"
+  },
+  {
+    "text": "这是我自己做的一款网站主题，我要完成两件事：凡是出现旧品牌名的地方统一改为新品牌名，然后核查所有外链",
+    "expect": "ptc",
+    "why": "在一批文件里做全量替换 + 逐个核查外链，是 execute 代码执行的典型场景",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "你能清理一下这台机器上的缓存吗，释放空间",
+    "expect": "ptc",
+    "why": "清理一批缓存目录并判断哪些能删，逐条判定才安全",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "检查我本机下载的模型都有哪些，以及它们分别关联的是什么 AI 工具",
+    "expect": "ptc",
+    "why": "扫盘 + 逐项归类，几百个文件要一次性过一遍",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "技能市场和 MCP 市场里的卡片也改成两列显示",
+    "expect": "cordis",
+    "why": "改宿主界面布局，落点是插件源码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "修复 Escape 的既有缺陷，修完把插件版本号升级，然后把改动文件全部提交",
+    "expect": "cordis",
+    "why": "修插件的缺陷 = 改插件源码；顺带提交不影响结论",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "整体左右边距统一小一号，两边的边距要一致，左右对称：左边 20px，右边 20px",
+    "expect": "cordis",
+    "why": "改界面间距，要动样式代码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "在隔离目录里把两个插件试迁移到新 API 并跑通",
+    "expect": "cordis",
+    "why": "迁移插件到新 API = 改插件源码并验证",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "把宿主侧的 settings 注册按新的 ctx.settings.register 改一版",
+    "expect": "cordis",
+    "why": "改插件的宿主半区代码，缺 cordis 工具做不了",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "我只要在终端执行这条命令就行是吗",
+    "expect": "default",
+    "why": "确认一条命令，没有任务内容",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "帮我更新 dify 到最新版本",
+    "expect": "default",
+    "why": "一条命令的升级动作，任何模式都能做",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "这次改完之后，我感觉整体还是差点意思，你复述下我的需求，你理解了吗",
+    "expect": "default",
+    "why": "要求复述确认，属于沟通纠偏，不是新任务",
+    "lang": "zh",
+    "origin": "real"
+  }
+]

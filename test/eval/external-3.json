@@ -1,0 +1,170 @@
+[
+  {
+    "text": "dsh 0.2.2-alpha.2 是 web 端，桌面端是 v0.2.1-rc.5",
+    "expect": "default",
+    "why": "事实纠正，没有任务",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "是没安装到桌面端吗",
+    "expect": "default",
+    "why": "排错追问",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "点击铅笔图标没反应",
+    "expect": "default",
+    "why": "缺陷报告，先定位",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "为什么复刻的动效全部失效了，没有了",
+    "expect": "default",
+    "why": "排错：问为什么失效，不是要写新的",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "什么鬼？完全不行了，撤回你这次的更改",
+    "expect": "default",
+    "why": "要求回滚，不是新任务",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "还有需要修复以及功能增强的地方吗",
+    "expect": "default",
+    "why": "询问待办清单，先看有哪些再决定；不是派活",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "版本好统一，然后提交",
+    "expect": "default",
+    "why": "版本号对齐 + 提交，两条命令",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "那给我安装 AppCleaner",
+    "expect": "default",
+    "why": "装一个软件，跟模式独有能力无关",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "那这几个订阅源可以添加吗？另外一个不要了",
+    "expect": "default",
+    "why": "增删订阅条目，属于配置操作",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "把一、二、三更新到 readme 里",
+    "expect": "default",
+    "why": "写文档",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "那几项按钮到底是干什么的，这部分也添加到 readme",
+    "expect": "default",
+    "why": "写文档 + 解释，标准模式足够",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "加固 SKILL.md 里的 shell 注入面，LICENSE 署名改写",
+    "expect": "default",
+    "why": "改两个文件的内容，普通文件编辑就够，不需要 cordis 工具",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "我关闭了这个插件，然后还会出现所问非所答的情况，原因可能出在上下文注入，分析，别改任何代码",
+    "expect": "default",
+    "why": "「分析，别改任何代码」是明确的只读要求",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "Failed to load plugins web boot: 1 entry did not activate, pending (waiting for service)",
+    "expect": "default",
+    "why": "贴报错要诊断",
+    "lang": "en",
+    "origin": "real"
+  },
+  {
+    "text": "why does the sidebar entry not show up after installing the plugin",
+    "expect": "default",
+    "why": "英文排错：要理解现状，不是要写插件",
+    "lang": "en",
+    "origin": "real"
+  },
+  {
+    "text": "未提交（沙箱 EPERM），要基线在你终端跑，这是什么意思？为什么必要我去终端跑",
+    "expect": "default",
+    "why": "解释性提问",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "旧的 7 个任务可以彻底删掉了，删掉不再挂载的文件",
+    "expect": "ptc",
+    "why": "在一批记录和文件里做批量删除与清理",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "clean up the six stale temp files under the new ledger directory",
+    "expect": "ptc",
+    "why": "英文批量删文件",
+    "lang": "en",
+    "origin": "real"
+  },
+  {
+    "text": "我要的这个插件是 skill + mcp 在一起的，不要分开。另外入口要在左侧边栏单独有一个按钮入口",
+    "expect": "cordis",
+    "why": "给插件加侧栏入口，属于加界面",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "那就添加这两项：MOBI/AZW3 封面、跨源重复书提示",
+    "expect": "cordis",
+    "why": "给插件加两项功能，要改插件源码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "让菜单直接调用插件自己的 API，把是否显示的口径统一到宿主配置，彻底消掉双源设计",
+    "expect": "cordis",
+    "why": "重构插件与宿主的配置来源，落点是插件代码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "toggle 的 title 和 aria-label，由「停用 / 启用」改为明确语义",
+    "expect": "cordis",
+    "why": "改界面的属性文案，要改插件渲染代码",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "如果输入框有内容，再点击指令选项卡时应该弹出判断：是清空输入框写入，还是追加到内容之后",
+    "expect": "cordis",
+    "why": "改交互行为（弹窗决策），属于改宿主行为",
+    "lang": "zh",
+    "origin": "real"
+  },
+  {
+    "text": "补充上去不合理的地方进行优化，完成后对 readme 做一次同步",
+    "expect": "cordis",
+    "why": "优化插件 + 补功能，落点是插件源码；后半句的 readme 不影响结论",
+    "lang": "zh",
+    "origin": "real"
+  }
+]

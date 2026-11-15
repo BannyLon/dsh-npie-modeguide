@@ -6,6 +6,7 @@
   "ui": {
     "trigger": "Mode guide",
     "triggerAria": "Mode guide: describe a task to decide which Agent preset to use",
+    "suggestPrefix": "Suggest: ",
     "sheetTitle": "Mode guide",
     "close": "Close",
     "hint": "Describe the task. Switch only if it needs a mode-exclusive tool.",
@@ -58,6 +59,10 @@
     "statsAvg": "avg model time",
     "statsFeedback": "feedback",
     "statsUnavailable": "The host returned no stats (this run may not have judged anything yet).",
+    "settingsFallback": "Ask the model once when rules are unsure",
+    "settingsTimeout": "Judge timeout (ms)",
+    "settingsHint": "Changes apply immediately and are written to this profile's config.",
+    "settingsUnavailable": "The host is not serving this row's settings (older host, or the plugin row id does not match the settings namespace).",
     "mode_minimal": "Minimal",
     "mode_standard": "Standard",
     "mode_ptc": "PTC",

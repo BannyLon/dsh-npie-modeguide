@@ -1,6 +1,6 @@
 /**
  * dsh-npie-modeguide — 浏览器半区（由 build.mjs 生成，不要手改）。
- * source-sha1: 1a14833a615fd9347ed025c2ec836736fef4adb5
+ * source-sha1: 84a5ce67310118222fa0b6de1d9411e888b1f848
  *
  * 改逻辑请改 src/capabilities.js / src/recommender.js / adapter.js，然后 node build.mjs。
  */
@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
     var module = { exports: {} };
     var exports = module.exports;
     Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-    const LOCALES = {"zh":{"trigger":"模式推荐","triggerAria":"模式推荐：描述任务，判断该用哪个 Agent 预设","sheetTitle":"模式推荐","close":"关闭","hint":"把任务写下来，只在需要某个模式独有的工具时才建议换。","mnemonic":"口诀：默认别动；写插件换创造；工作流换标准；极简只做对照。","placeholder":"例如：把下载目录 300 个文件按类型分类重命名","inputAria":"任务描述","judge":"给建议","busyModel":"请模型复核…","fallbackNote":"模型没回应，已按本地规则给出建议。","rateLimitedNote":"模型复核问得太频繁了，约 {s} 秒后可再问；这次先按本地规则给建议。","rateLimitedNoteSoon":"模型复核问得太频繁了，稍等片刻再问；这次先按本地规则给建议。","useDraft":"用输入框里的文字","byLlm":"· 模型判断","byRules":"· 规则判断","byDefault":"· 当前新任务默认：","defaultTagFallback":"· 未读到默认，按内置 PTC","apply":"切到这个模式","keepDefault":"保持当前默认","keepShort":"无需切换","alreadyDefault":"结论与你设的新任务默认一致，无需切换。","applying":"切换中…","applyRetry":"重试切换","appliedShort":"已切换","applyTimeout":"切换超时，宿主没有回应。","manualHint":" 可点输入框工具栏里当前显示模式名的地方手动切换。","lockedHint":"这个任务已经开始，模式在创建时就定下了 —— 下个新任务再用它。","applied":"已切换。","noRemote":"这个环境不支持切换模式。","applyFailedPrefix":"切换失败：","unknownReason":"未知原因","matrixToggle":"查看模式之间的差异","matrixToggleHide":"收起差异表","capability":"能力","conditional":"视操作系统而定","legend":"这张表从当前版本内核的预设定义解析；宿主能实时读取时会自动更新。只列出各模式之间有差别的能力；✓ 有　· 没有　? 视环境而定。","feedbackAsk":"这个判断准吗","feedbackUp":"判对了","feedbackDown":"判错了","feedbackThanks":"已记在本机","feedbackFailed":"没记上","statsShow":"本机统计","statsHide":"收起统计","statsJudged":"判了几次","statsRule":"规则定案","statsModel":"模型定案","statsDefault":"留在默认","statsCalls":"模型调用","statsCache":"缓存命中","statsLimited":"被限流","statsAvg":"模型平均耗时","statsFeedback":"反馈","statsUnavailable":"宿主没给出统计（这次运行可能还没走过判定）。","mode_minimal":"极简模式","mode_standard":"标准模式","mode_ptc":"PTC 模式","mode_cordis":"创造模式","short_minimal":"极简","short_standard":"标准","short_ptc":"PTC","short_cordis":"创造","cap_files":"文件读写","cap_search":"文件搜索","cap_shell":"终端命令","cap_web":"联网检索","cap_subagent":"子代理","cap_workflow":"工作流编排","cap_plan":"计划模式","cap_skill":"技能","cap_goal":"目标","cap_todo":"任务清单","cap_ptc":"execute 代码执行","cap_office":"Office 文档","cap_cordis":"改 DSH 本体","cap_pluginManager":"插件管理"},"en":{"trigger":"Mode guide","triggerAria":"Mode guide: describe a task to decide which Agent preset to use","sheetTitle":"Mode guide","close":"Close","hint":"Describe the task. Switch only if it needs a mode-exclusive tool.","mnemonic":"Default: stay put. Creative for plugins, Standard for workflows, Minimal for baselines.","placeholder":"e.g. Sort and rename 300 files in my Downloads folder by type","inputAria":"Task description","judge":"Recommend","busyModel":"Asking the model…","fallbackNote":"No model response; showing the rule-based recommendation.","rateLimitedNote":"Model review was called too often; try again in about {s}s. Showing the rule-based recommendation for now.","rateLimitedNoteSoon":"Model review was called too often; try again shortly. Showing the rule-based recommendation for now.","useDraft":"Use composer text","byLlm":"· model","byRules":"· rules","byDefault":"· current default: ","defaultTagFallback":"· default unread; using built-in PTC","apply":"Switch to this mode","keepDefault":"Keep current default","keepShort":"No switch needed","alreadyDefault":"This matches your default for new tasks; no switch needed.","applying":"Switching…","applyRetry":"Retry switch","appliedShort":"Switched","applyTimeout":"Switch timed out; the host did not respond.","manualHint":" You can switch manually from the current mode label in the composer toolbar.","lockedHint":"This task has already started; its mode was fixed when it was created. Use this on your next new task.","applied":"Switched.","noRemote":"Mode switching is not available in this environment.","applyFailedPrefix":"Switch failed: ","unknownReason":"unknown reason","matrixToggle":"See how the modes differ","matrixToggleHide":"Hide differences","capability":"Capability","conditional":"Depends on the operating system","legend":"Parsed from this version's preset definitions; refreshed live when the host exposes them. Only capabilities that differ are listed; ✓ yes  · no  ? depends on environment.","feedbackAsk":"Was this verdict right?","feedbackUp":"Right","feedbackDown":"Wrong","feedbackThanks":"saved locally","feedbackFailed":"not saved","statsShow":"Local stats","statsHide":"Hide stats","statsJudged":"verdicts","statsRule":"decided by rules","statsModel":"decided by model","statsDefault":"kept the default","statsCalls":"model calls","statsCache":"cache hits","statsLimited":"rate-limited","statsAvg":"avg model time","statsFeedback":"feedback","statsUnavailable":"The host returned no stats (this run may not have judged anything yet).","mode_minimal":"Minimal","mode_standard":"Standard","mode_ptc":"PTC","mode_cordis":"Creative","short_minimal":"Minimal","short_standard":"Standard","short_ptc":"PTC","short_cordis":"Creative","cap_files":"File read/write","cap_search":"File search","cap_shell":"Terminal","cap_web":"Web search","cap_subagent":"Subagents","cap_workflow":"Workflow","cap_plan":"Plan mode","cap_skill":"Skills","cap_goal":"Goals","cap_todo":"Task list","cap_ptc":"execute (code mode)","cap_office":"Office documents","cap_cordis":"Edit DSH itself","cap_pluginManager":"Plugin manager"}};
+    const LOCALES = {"zh":{"trigger":"模式推荐","triggerAria":"模式推荐：描述任务，判断该用哪个 Agent 预设","suggestPrefix":"建议：","sheetTitle":"模式推荐","close":"关闭","hint":"把任务写下来，只在需要某个模式独有的工具时才建议换。","mnemonic":"口诀：默认别动；写插件换创造；工作流换标准；极简只做对照。","placeholder":"例如：把下载目录 300 个文件按类型分类重命名","inputAria":"任务描述","judge":"给建议","busyModel":"请模型复核…","fallbackNote":"模型没回应，已按本地规则给出建议。","rateLimitedNote":"模型复核问得太频繁了，约 {s} 秒后可再问；这次先按本地规则给建议。","rateLimitedNoteSoon":"模型复核问得太频繁了，稍等片刻再问；这次先按本地规则给建议。","useDraft":"用输入框里的文字","byLlm":"· 模型判断","byRules":"· 规则判断","byDefault":"· 当前新任务默认：","defaultTagFallback":"· 未读到默认，按内置 PTC","apply":"切到这个模式","keepDefault":"保持当前默认","keepShort":"无需切换","alreadyDefault":"结论与你设的新任务默认一致，无需切换。","applying":"切换中…","applyRetry":"重试切换","appliedShort":"已切换","applyTimeout":"切换超时，宿主没有回应。","manualHint":" 可点输入框工具栏里当前显示模式名的地方手动切换。","lockedHint":"这个任务已经开始，模式在创建时就定下了 —— 下个新任务再用它。","applied":"已切换。","noRemote":"这个环境不支持切换模式。","applyFailedPrefix":"切换失败：","unknownReason":"未知原因","matrixToggle":"查看模式之间的差异","matrixToggleHide":"收起差异表","capability":"能力","conditional":"视操作系统而定","legend":"这张表从当前版本内核的预设定义解析；宿主能实时读取时会自动更新。只列出各模式之间有差别的能力；✓ 有　· 没有　? 视环境而定。","feedbackAsk":"这个判断准吗","feedbackUp":"判对了","feedbackDown":"判错了","feedbackThanks":"已记在本机","feedbackFailed":"没记上","statsShow":"本机统计","statsHide":"收起统计","statsJudged":"判了几次","statsRule":"规则定案","statsModel":"模型定案","statsDefault":"留在默认","statsCalls":"模型调用","statsCache":"缓存命中","statsLimited":"被限流","statsAvg":"模型平均耗时","statsFeedback":"反馈","statsUnavailable":"宿主没给出统计（这次运行可能还没走过判定）。","settingsFallback":"规则拿不准时，允许问一次模型","settingsTimeout":"单次判定超时（毫秒）","settingsHint":"改动立刻生效，并写进当前 profile 的配置。","settingsUnavailable":"宿主没把这行的设置下发给界面（旧版本宿主，或插件行 id 与设置命名空间不一致）。","mode_minimal":"极简模式","mode_standard":"标准模式","mode_ptc":"PTC 模式","mode_cordis":"创造模式","short_minimal":"极简","short_standard":"标准","short_ptc":"PTC","short_cordis":"创造","cap_files":"文件读写","cap_search":"文件搜索","cap_shell":"终端命令","cap_web":"联网检索","cap_subagent":"子代理","cap_workflow":"工作流编排","cap_plan":"计划模式","cap_skill":"技能","cap_goal":"目标","cap_todo":"任务清单","cap_ptc":"execute 代码执行","cap_office":"Office 文档","cap_cordis":"改 DSH 本体","cap_pluginManager":"插件管理"},"en":{"trigger":"Mode guide","triggerAria":"Mode guide: describe a task to decide which Agent preset to use","suggestPrefix":"Suggest: ","sheetTitle":"Mode guide","close":"Close","hint":"Describe the task. Switch only if it needs a mode-exclusive tool.","mnemonic":"Default: stay put. Creative for plugins, Standard for workflows, Minimal for baselines.","placeholder":"e.g. Sort and rename 300 files in my Downloads folder by type","inputAria":"Task description","judge":"Recommend","busyModel":"Asking the model…","fallbackNote":"No model response; showing the rule-based recommendation.","rateLimitedNote":"Model review was called too often; try again in about {s}s. Showing the rule-based recommendation for now.","rateLimitedNoteSoon":"Model review was called too often; try again shortly. Showing the rule-based recommendation for now.","useDraft":"Use composer text","byLlm":"· model","byRules":"· rules","byDefault":"· current default: ","defaultTagFallback":"· default unread; using built-in PTC","apply":"Switch to this mode","keepDefault":"Keep current default","keepShort":"No switch needed","alreadyDefault":"This matches your default for new tasks; no switch needed.","applying":"Switching…","applyRetry":"Retry switch","appliedShort":"Switched","applyTimeout":"Switch timed out; the host did not respond.","manualHint":" You can switch manually from the current mode label in the composer toolbar.","lockedHint":"This task has already started; its mode was fixed when it was created. Use this on your next new task.","applied":"Switched.","noRemote":"Mode switching is not available in this environment.","applyFailedPrefix":"Switch failed: ","unknownReason":"unknown reason","matrixToggle":"See how the modes differ","matrixToggleHide":"Hide differences","capability":"Capability","conditional":"Depends on the operating system","legend":"Parsed from this version's preset definitions; refreshed live when the host exposes them. Only capabilities that differ are listed; ✓ yes  · no  ? depends on environment.","feedbackAsk":"Was this verdict right?","feedbackUp":"Right","feedbackDown":"Wrong","feedbackThanks":"saved locally","feedbackFailed":"not saved","statsShow":"Local stats","statsHide":"Hide stats","statsJudged":"verdicts","statsRule":"decided by rules","statsModel":"decided by model","statsDefault":"kept the default","statsCalls":"model calls","statsCache":"cache hits","statsLimited":"rate-limited","statsAvg":"avg model time","statsFeedback":"feedback","statsUnavailable":"The host returned no stats (this run may not have judged anything yet).","settingsFallback":"Ask the model once when rules are unsure","settingsTimeout":"Judge timeout (ms)","settingsHint":"Changes apply immediately and are written to this profile's config.","settingsUnavailable":"The host is not serving this row's settings (older host, or the plugin row id does not match the settings namespace).","mode_minimal":"Minimal","mode_standard":"Standard","mode_ptc":"PTC","mode_cordis":"Creative","short_minimal":"Minimal","short_standard":"Standard","short_ptc":"PTC","short_cordis":"Creative","cap_files":"File read/write","cap_search":"File search","cap_shell":"Terminal","cap_web":"Web search","cap_subagent":"Subagents","cap_workflow":"Workflow","cap_plan":"Plan mode","cap_skill":"Skills","cap_goal":"Goals","cap_todo":"Task list","cap_ptc":"execute (code mode)","cap_office":"Office documents","cap_cordis":"Edit DSH itself","cap_pluginManager":"Plugin manager"}};
     const PRESET_BASELINE = {"columns":[{"id":"standard","name":"标准模式"},{"id":"ptc","name":"PTC 模式"},{"id":"minimal","name":"极简模式"},{"id":"cordis","name":"创造模式"}],"rows":[{"id":"files","label":"文件读写","hint":"读、写、编辑工作区文件","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"search","label":"文件搜索","hint":"按名找文件、按内容搜索","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"web","label":"联网检索","hint":"网页搜索与抓取","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"subagent","label":"子代理","hint":"派生子代理并行干活","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"workflow","label":"工作流编排","hint":"多阶段大扇出编排","cells":{"standard":true,"ptc":false,"minimal":false,"cordis":true}},{"id":"plan","label":"计划模式","hint":"先出方案再动手","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"skill","label":"技能","hint":"加载并使用 Skill","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"goal","label":"目标","hint":"跨轮持续推进一个目标","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"todo","label":"任务清单","hint":"给多步任务记进度","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"ptc","label":"execute 代码执行","hint":"写一段 JS 批量调工具，只回结果","cells":{"standard":false,"ptc":true,"minimal":false,"cordis":false}},{"id":"office","label":"Office 文档","hint":"读写 Word / Excel / PPT","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":false}},{"id":"cordis","label":"改 DSH 本体","hint":"写插件、改预设、加界面","cells":{"standard":false,"ptc":false,"minimal":false,"cordis":true}},{"id":"pluginManager","label":"插件管理","hint":"装、卸、启停插件","cells":{"standard":"conditional","ptc":false,"minimal":false,"cordis":"conditional"}}]};
 
   // ── src/presets.js ──
@@ -485,14 +485,83 @@ window.__ModuleLoader__.load({
         // 折叠」「给这个按钮换个颜色」都没带「加 / 改」，原先只落到线索、判成不换。
         // 它们单看很泛（「让他看看」），配上 DSH 内部对象才成立 —— 这正是组合判据的用途。
         verbs: ['加', '改', '做', '写', '新增', '增加', '删掉', '去掉', '定制', '换成', '换',
-          '让', '设置', '调整', '隐藏', '折叠',
-          'add', 'edit', 'write', 'remove', 'change', 'customize'],
+          '让', '设置', '调整', '隐藏', '折叠', '修', '修复', '补上', '迁移', '优化',
+          // 「修一下」是反向词（排错），但「修主题插件选择器」是明确的改动指令：
+          // 区别在于后面跟的是不是 DSH 内部对象 —— 这正是组合判据存在的意义。
+          'add', 'edit', 'write', 'remove', 'change', 'customize', 'fix', 'migrate', 'optimize'],
+        // 一句之内成立即可，不要求紧邻：真实说法常把动作放在句子后半
+        // （「技能市场和 MCP 市场里的卡片也改成两列显示」）。
+        // 跨句仍不算 —— 那多半是两件事。
+        scope: 'sentence',
+        // 对象必须是**宿主里的具体构件**。样式类（边距 / 间距 / 字号 / 配色）也算：
+        // 「整体左右边距统一小一号，左右对称」是明确的改界面，通篇却没有「插件」二字。
         objects: ['面板', '界面', '按钮', '侧栏', '侧边栏', '主题', '皮肤', '预设', '插件', '快捷键',
-          '开关', '菜单', '图标', '输入框', '工具栏', 'panel', 'sidebar', 'button', 'theme', 'preset', 'plugin', 'shortcut', 'toolbar'],
+          '开关', '菜单', '图标', '输入框', '工具栏', '布局', '边距', '间距', '样式', '配色', '字号', '字体',
+          // `注册`/`api` 是宿主侧的接缝名：「把宿主侧的 settings 注册按新 API 改一版」
+          // 说的就是改插件代码。
+          '注册', 'api', 'settings',
+          'panel', 'sidebar', 'button', 'theme', 'preset', 'plugin', 'shortcut', 'toolbar', 'layout', 'style'],
+      }, {
+        /**
+         * 第二组：**需求动词 + 宿主行为**。
+         *
+         * 「功能 / 交互 / 行为 / 入口」不能配第一组那些通用动词（做 / 写 / 加）：
+         * 「交互动画做得不够好」「这两个功能都暂时放弃了」立刻被推成创造模式 ——
+         * 实测两条都是纯误伤。它们要配的是「缺少 / 补上 / 改成」这类**要求**，
+         * 才等于「要改宿主行为」。
+         *
+         * 「增加 / 添加」也不能配 `功能`：「深度研究下这个项目可以做哪些工作、
+         * 可以增加哪些功能」是在**问可能性**，不是在派活 —— 这一条来自冻结批次的
+         * 盲测，不是想出来的。所以它们下面单独一组，只配具体构件。
+         */
+        verbs: ['缺少', '缺个', '补上', '要有', '做成', '实现', '支持', '改成'],
+        objects: ['功能', '交互', '行为', '卡片', 'feature'],
+      }, {
+        // 「加一个具体东西」：动词可以宽，对象必须是宿主里能指认的构件。
+        verbs: ['增加', '添加', '加一个', '加个', '补上'],
+        objects: ['入口', '卡片', '示例卡', '菜单项'],
+      }, {
+        /**
+         * 视觉微调：量词/对齐词 + 样式对象。
+         *
+         * 「整体左右边距统一小一号，两边要对称：左边 20px，右边 20px」通篇没有
+         * 「插件 / 界面 / 按钮」，只有度量（边距 / 间距 / 字号 / 配色）—— 它仍然
+         * 是改宿主界面。曾经把「统一」放进通用动词里凑这条，结果
+         * 「插件路径应该统一放在哪个目录下」被判成改插件 —— 所以动词必须是
+         * **视觉量词**，不能是「统一」这种也能表示「一律」的词。
+         */
+        verbs: ['小一号', '大一号', '小两号', '对齐', '对称', '一致', '改成', '换成', '调整'],
+        objects: ['边距', '间距', '字号', '配色', '字体', '圆角', '宽度', '高度'],
+        scope: 'sentence',
       }],
-      // 「插件」单独出现就足以说明要碰 DSH 本体 —— 但必须先排除排错语境（见 REVERSE_RULES）。
-      strong: ['插件', 'plugin'],
-      support: ['cordis', 'mcp', 'hook', '预设', 'preset', 'skill', '技能', '面板', 'panel', 'sidebar', '侧栏'],
+      /**
+       * `strong: []` —— 「插件」从 strong 降级，是本文件 0.2.3 最重要的一处修正。
+       *
+       * 0.2.2 把「插件」当 strong：单条即定案。可它在**真实说法**里多数是宾语，
+       * 而不是「要碰 DSH 本体」的证据：
+       *
+       *   查一下这个插件有没有更新 / 帮我卸载这个插件 / 两个插件会不会打架 /
+       *   我如何才能重新构建打包插件 / 记得更新该插件的版本号
+       *
+       * 这五句一句都不需要 cordis 工具，判成创造就是纯误伤 —— 而它们全来自
+       * 真实会话日志（`test/eval/external.json`），不是我们编的刁难句。这正是
+       * 「存在性 ≠ 有效性」在规则层的版本：词出现了，但它证明不了那件事。
+       *
+       * 现在它只是**半条证据**（support，要凑够两条），而「要碰 DSH 本体」由另外
+       * 两个更强的证据承担：`pinned`（用户点名「写插件」）与 `pairs`（动作 + DSH
+       * 内部对象）。两条都比它更接近「缺了它做不了」。
+       */
+      strong: [],
+      /**
+       * 只剩「技术词」留在这里：`cordis` / `mcp` / `hook` 出现就说明话题在宿主内部。
+       *
+       * 「插件 / skill / 预设 / 面板 / 侧栏」这些**对象名**全部移出 —— 它们单独凑够
+       * 两条就会定案，而真实说法里两条对象名并存太常见了：
+       * 「还有 skill 的路径，插件我现在路径也是乱七八糟」被判成创造模式，
+       * 可它要的只是「告诉我放哪」。对象名留在 `pairs.objects` 里就够了：
+       * 那里必须同时有动作词才成立，这才是「要改」的证据。
+       */
+      support: ['cordis', 'mcp', 'hook'],
       // 英文弱线索补齐：界面早就双语，规则若只有中文，一半用户拿到的是空功能。
       // 弱线索只算半条，加词的风险远小于 strong —— 但要避免和别的模式撞词。
       weak: ['按钮', 'button', '组件', 'component', 'widget', '图标', 'icon', '主题', 'theme',
@@ -548,10 +617,57 @@ window.__ModuleLoader__.load({
       pairs: [{
         verbs: ['遍历', '遍历一遍', '逐个过'],
         objects: ['目录', '文件夹', '所有文件', '全部文件', '这批文件', '一批文件', '每个文件', '子目录', '目录下'],
+      }, {
+        /**
+         * 收拾一批东西：动词 + **成批的对象**。
+         *
+         * 为什么不能把「整理 / 清理 / 删除」直接放进 support：它们对单个文档同样成立
+         * （「整理一下这个表格」），一放进去就立刻把纯文本任务推进 PTC —— 卡线集当场
+         * 红了一条，反向对照干的活。真实的共同点是「对象是一批东西」：
+         * 书签、缓存、断链、残留、备份、部署包、目录。所以做成组合判据。
+         */
+        verbs: ['整理', '清理', '清掉', '归档', '归类', '删除', '删掉', '对账',
+          // 全量替换 / 逐条核查：一批文件里换掉同一个词、再把外链挨个点一遍，
+          // 正是「标准模式的 bash 也能做，但几百条得全塞进上下文」那种活。
+          '替换', '统一改', '核查', '逐个核查', '比对', '校对',
+          // 英文侧同义动词：界面早就双语，规则只有中文的话英文用户拿到的是空功能。
+          'clean up', 'cleanup', 'remove', 'delete', 'archive', 'replace'],
+        objects: ['目录', '文件夹', '书签', '缓存', '断链', '残留', '备份', '部署包',
+          '所有文件', '全部文件', '这批文件', '一批文件',
+          '外链', '链接', '品牌名', '文件名', '字段', '旧名',
+          // 英文侧：目录 / 文件夹 / 文件。第三批冻结盲测里
+          // 「clean up the six stale temp files under the new ledger directory」
+          // 只拿到半条线索 —— 因为 `directory` 只在弱线索里，凑不成组合。
+          'directory', 'folder', 'files'],
+        scope: 'sentence',
+      }, {
+        /**
+         * 「彻底删掉 / 全删 / 清空」+ 文件 / 任务 / 记录。
+         *
+         * 为什么动词这么窄：`删掉这个文件` 一条 `rm` 就完了，不值得换模式。
+         * 但「旧的 7 个任务可以**彻底删掉**了，删掉不再挂载的文件」是清理一批 ——
+         * 分界就在「彻底 / 全 / 清空」这些量词上，所以只收它们。
+         */
+        verbs: ['彻底删', '全删', '全清', '清空', '批量删', '统一删', '都删', '一起删'],
+        objects: ['文件', '任务', '记录', '条目', '目录', '备份'],
+        scope: 'sentence',
+      }, {
+        /**
+         * 扫本机：「检查我本机下载的模型都有哪些，分别关联什么工具」——
+         * 动词是「检查」这种最普通的词，对象才是关键：本机 / 磁盘 / 下载的 / 安装的。
+         * 配在一起才等于「要遍历这台机器」，而不是「检查这段代码」。
+         */
+        verbs: ['检查', '扫描', '扫一遍', '列出', '统计', '看看', '查一下', '盘一下', '清理'],
+        objects: ['本机', '磁盘', '机器上', '下载的', '安装的', '已安装'],
+        scope: 'sentence',
       }],
       support: ['批量', '遍历', '逐条', '逐个', '去重', '汇总', '筛选', '清洗', '重命名', '分类',
         '合并', '拆分', '全部文件', '所有文件', '脚本', '一次性',
-        'batch', 'bulk', 'dedupe', 'deduplicate', 'aggregate', 'rename', 'merge', 'split', 'filter', 'traverse', 'script'],
+        // 被收拾的对象本身也各算半条：真实说法里「文章缓存里还留着 3 个不在订阅列表
+        // 的源，清理掉吧」只有一条 support，配上组合判据才够。
+        '书签', '缓存', '断链', '残留', '备份', '部署包',
+        'batch', 'bulk', 'dedupe', 'deduplicate', 'aggregate', 'rename', 'merge', 'split', 'filter', 'traverse', 'script',
+        'cleanup', 'clean up', 'archive', 'downloaded', 'delete'],
       // 「统计」只在弱线索里：`grep -c` 一行就数完了，标准模式的 bash 够用。
       // 它原先在 support 里，于是「在这个目录下找所有 .log 并统计条数」被
       // 统计(1) + log + 目录下（两条弱线索 = 1）凑成定案 —— 和「统计表格行数」
@@ -597,6 +713,10 @@ window.__ModuleLoader__.load({
     // 免得「写个脚本卸载这个依赖」也被压回默认。
     '卸载了', '卸载掉',
     '看看这个', '看一下这个', '帮我看看', '帮我看一下',
+    // 「先不改动」「先别动」是**明确的止损指令**，不是待办任务。
+    // 真实说法里极常见（「我先问你，先不改动，如果把插件迁走会有什么影响」）：
+    // 后半句的「迁」是真动词，但用户要的是评估，不是现在动手。命中即压回默认。
+    '先不改动', '先别动', '先不要改', '先不要动手', '不要动手', '先不动', '别动',
     // 英文
     'why', 'not working', 'stopped working', 'stops working', "won't start", 'not loading',
     "doesn't work", 'does not work', "don't work", 'error', 'errors',
@@ -636,12 +756,29 @@ window.__ModuleLoader__.load({
   const DSH_CONTEXT = /(dsh|deepseek harness|cordis|插件|plugin|预设|preset)/
 
   /**
+   * 需求句式标记。
+   *
+   * 反向词表按「排错语境」压回默认模式，但真实说法里有一类句子**前半句像排错、
+   * 后半句是需求**：「为什么我的桌面端缺少一个基础功能：编辑历史消息并重新生成」。
+   * 只看「为什么」就压回默认，等于把真需求当成排错 —— 而它明确要改宿主。
+   *
+   * 所以反向词前面加一道例外：同时命中「动作 + DSH 内部对象」（pairs）**且**带
+   * 这类要求标记时，不按排错处理，回到正常打分。
+   *
+   * 只在 pairs 已经命中的前提下生效 —— 单独一个「希望」什么都证明不了。
+   */
+  const DEMAND = /(缺少|缺个|缺一个|加一个|加个|增加|补上|改成|做成|做到|希望|能不能|可不可以|应该|要能)/
+
+  /**
    * 提示词与**规则语义**的版本号。改了提示词、或改了规则能判出的结论，都要 +1。
    *
    * 结论缓存只按 `(版本, 默认模式, 输入, 能力表)` 做键：规则改了而版本不变，旧缓存会
    * 拿着上一套规则的结论冒充新逻辑 —— 用户看到的就是「改了半天还是老答案」。
+   *
+   * 4（0.2.3）：`插件` 从 strong 降为 support、pairs 扩了「修 / 功能 / 交互 / 行为 /
+   * 消息 / 卡片」、ptc 收了清理类动词、反向词让位给需求句式 —— 结论会变，必须换 key。
    */
-  const PROMPT_VERSION = '3'
+  const PROMPT_VERSION = '4'
 
   /**
    * 把文本归一，方便匹配：小写、全角转半角、弯引号转直引号。
@@ -756,11 +893,74 @@ window.__ModuleLoader__.load({
    * @param {Array<{verbs: string[], objects: string[]}>} pairs
    * @returns {string[]} 命中的对象词（用于给出可复核的证据）。
    */
+  /**
+   * 取 `at` 所在的**一句话**。
+   *
+   * 组合判据默认只看对象附近 24 个字符的窗口，这够用来判断「加个面板」，但不够用来
+   * 判断「缓存里还留着 3 个源，清理掉吧」—— 动词在对象**后面**十几字之外，窗口够不到。
+   * 放宽成整句是有意的：同一句里既有「收拾」动词又有成批对象，就是同一个诉求；
+   * 跨句就不算（那多半是两件事）。
+   */
+  function sentenceAround(text, at) {
+    let start = 0
+    let end = text.length
+    for (let i = at; i > 0; i -= 1) {
+      if ('。！？!?\n；;'.includes(text[i - 1])) { start = i; break }
+    }
+    for (let i = at; i < text.length; i += 1) {
+      if ('。！？!?\n；;'.includes(text[i])) { end = i; break }
+    }
+    return text.slice(start, end)
+  }
+
+  /**
+   * 单字动词会命中复合词：`加` 在「加载」里、`改` 在「改写」里。
+   *
+   * 中文没有词边界，`text.indexOf('加')` 必然把「插件的**加载**顺序」当成「加」动作，
+   * 于是「说清加载顺序」被判成「要加东西」。实测这一条把一句纯提问推成了创造模式。
+   * 只排真正的复合词，别排得太宽 —— 排掉「改一版」这种真动词比留着噪声更糟。
+   */
+  const VERB_COMPOUNDS = Object.freeze([
+    '加载', '加入', '加油', '加快', '加强', '加大', '加权',
+    '改写', '改编', '改造', '改天', '改进', '改正',
+    '做法', '做梦',
+  ])
+
+  /**
+   * 窗口里是否真的出现了这个动词 —— **被否定的不算**。
+   *
+   * 「我先问你，先不改动，如果把插件统一迁到另一个目录会怎样」里有一个「改」，
+   * 但它被「不」否定，意思是**别动**。旧实现直接 `window.includes('改')`，
+   * 于是「先不改动 + 插件」= 要改插件 = 创造模式，正好把用户的意思读反。
+   *
+   * 只看动词前面 4 个字：中文的否定几乎都紧贴在动词前（不 / 别 / 没 / 勿 / 先不要）。
+   */
+  function verbPresent(text, verb) {
+    let from = 0
+    for (;;) {
+      const at = text.indexOf(verb, from)
+      if (at === -1) return false
+      // 复合词直接跳过（「加载」不是「加」）。
+      if (VERB_COMPOUNDS.some((word) => text.startsWith(word, at))) {
+        from = at + 1
+        continue
+      }
+      const before = text.slice(Math.max(0, at - 4), at)
+      // A-not-A 疑问式里的「不」不是否定：「这个功能能不能做成插件」仍在要求做。
+      // 不排除它，这条卡线用例当场红 —— 否定词表最容易踩的就是这个坑。
+      const asking = /(能不能|可不可以|要不要|是不是|会不会|行不行)$/.test(before)
+      const negated = !asking && /(不|别|没|勿|无需|不用|不要)$/.test(before)
+      if (!negated) return true
+      from = at + 1
+    }
+  }
+
   function pairHits(text, pairs) {
     const out = []
     for (const pair of Array.isArray(pairs) ? pairs : []) {
       const verbs = Array.isArray(pair?.verbs) ? pair.verbs : []
       const objects = Array.isArray(pair?.objects) ? pair.objects : []
+      const scoped = pair?.scope === 'sentence'
       for (const object of objects) {
         if (!object) continue
         let from = 0
@@ -769,8 +969,10 @@ window.__ModuleLoader__.load({
           const at = text.indexOf(object, from)
           if (at === -1) break
           if (boundaryOk(text, at, object) && !isNegated(text, at)) {
-            const window = text.slice(Math.max(0, at - 14), at + object.length + 10)
-            if (verbs.some((verb) => verb && window.includes(verb))) {
+            const window = scoped
+              ? sentenceAround(text, at)
+              : text.slice(Math.max(0, at - 14), at + object.length + 10)
+            if (verbs.some((verb) => verb && verbPresent(window, verb))) {
               out.push(object)
               found = true
             }
@@ -908,7 +1110,13 @@ window.__ModuleLoader__.load({
 
     // 第二优先：反向词。排错 / 查看 / 解释现状 —— 用户不是要用独有工具，
     // 而是想理解或修好现状。这类描述的正确答案永远是「留在默认模式」。
-    const reverse = hits(text, REVERSE_RULES)
+    //
+    // 例外：需求句式。「为什么缺少一个基础功能：改一下前面某条提问从那里重新跑」
+    // 既有反向词（为什么）又明确要求改宿主 —— 只看反向词就把真需求压没了。
+    // 例外条件很窄：必须 pairs（动作 + DSH 内部对象）真的命中，且带要求标记。
+    const cordisPairs = scored.find((s) => s.rule.id === 'cordis')
+    const demanding = Boolean(cordisPairs && cordisPairs.pairs.length > 0 && DEMAND.test(text))
+    const reverse = demanding ? [] : hits(text, REVERSE_RULES)
     if (reverse.length) {
       return emptyResult({
         kind: 'unknown',
@@ -1337,6 +1545,18 @@ window.__ModuleLoader__.load({
    */
 
   const PKG = 'dsh-npie-modeguide'
+
+  /**
+   * 宿主 loader 里的行 id，也就是设置命名空间的名字。
+   *
+   * `cordis.patch.yml` 里那条 `- id: npie-modeguide` 是**契约**：宿主按 entry.id 服务
+   * 设置命名空间，客户端 `configForms.get(entryId)` 认的也是它。两处任何一个改了，
+   * 设置卡片会静默消失（`get()` 返回 unavailable），不会报错。
+   */
+  const ROW_ID = 'npie-modeguide'
+
+  /** 插件页里「这一行」的配置卡 key：`<包名>#<行 id>`，与先例一致。 */
+  const ROW_CONFIG_KEY = `${PKG}#${ROW_ID}`
   const JUDGE_PATH = '/api/npie-modeguide/judge'
   const CONFIG_PATH = '/api/npie-modeguide/config'
   const FEEDBACK_PATH = '/api/npie-modeguide/feedback'
@@ -1385,6 +1605,22 @@ window.__ModuleLoader__.load({
    * 所以这个间隔的差别不在读盘成本，而在「面板长开时一小时问宿主多少次」。
    */
   const DEFAULT_MODE_POLL_MS = 12000
+
+  /**
+   * 「输入即显示」的防抖窗口。
+   *
+   * 打字时每一键都判一次会把 CPU 烧在没人看的地方；停手 500ms 才判，用户根本察觉不到
+   * 延迟（他本来也不会在打第一个字时看工具条）。
+   */
+  const INPUT_HINT_DEBOUNCE_MS = 500
+
+  /**
+   * 太短的草稿不出徽标。
+   *
+   * 「帮我」「改一下」这类半句在任何模式下都成立，给它们挂一个「建议：创造」只会
+   * 制造噪声 —— 而且噪声会训练用户无视徽标，那比没有徽标更糟。
+   */
+  const INPUT_HINT_MIN_CHARS = 8
   /** 官方 list() 兜底读取的上限：它内部可能 await loader.await() 永不返回。 */
   const DEFAULT_LIST_TIMEOUT_MS = 1200
 
@@ -1464,6 +1700,14 @@ window.__ModuleLoader__.load({
   .npie-mg-trigger:active{transform:scale(.94)}
   .npie-mg-trigger:focus-visible{box-shadow:0 0 0 2px var(--dsw-focus-ring-color,#6d3bf5)}
   .npie-mg-trigger[data-armed="true"]{background:rgba(109,59,245,.2)}
+  /* 有建议时按钮变宽：图标 + 一句话。宽度靠内容，不写死，中文英文都放得下。 */
+  .npie-mg-trigger[data-hint="true"]{width:auto;gap:4px;padding:0 9px 0 5px}
+  .npie-mg-badge{font-size:11px;line-height:1;font-weight:600;white-space:nowrap;letter-spacing:.2px}
+  /* 设置卡：宿主插件页里的表单，尺寸交给宿主，这里只管对齐与行距。 */
+  .npie-mg-card{display:flex;flex-direction:column;gap:8px;padding:4px 0}
+  .npie-mg-card-row{display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.5}
+  .npie-mg-card-row input[type="number"]{width:88px;padding:2px 6px;border:1px solid rgba(109,59,245,.28);border-radius:6px;background:transparent;color:inherit;font:inherit}
+  .npie-mg-card-note{margin:0;font-size:11px;line-height:1.5;opacity:.72;color:var(--dsw-alias-label-secondary,#6b6579)}
   .npie-mg-tipbox{position:fixed;z-index:2147483100;transform:translate(-50%,-100%);padding:4px 8px;border-radius:6px;background:#252232;color:#f7f5ff;font-size:11px;line-height:1.4;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px rgba(20,16,36,.22);animation:npie-mg-fade 140ms ease-out both}
   @keyframes npie-mg-fade{from{opacity:0}to{opacity:1}}
   .npie-mg-pop{position:fixed;z-index:2147483000;width:min(380px,calc(100vw - 24px));max-height:min(520px,calc(100vh - 48px));display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l1,rgba(120,110,150,.2));border-radius:13px;background:var(--dsw-alias-bg-layer-1,#fdfcff);color:var(--dsw-alias-label-primary,#1c1a24);box-shadow:0 1px 2px rgba(24,20,40,.05),0 14px 38px rgba(24,20,40,.13);font:inherit;font-size:12.5px;line-height:1.5;animation:npie-mg-in 180ms cubic-bezier(.22,1,.36,1) both}
@@ -1868,6 +2112,149 @@ window.__ModuleLoader__.load({
     return column.name || column.id
   }
 
+  /**
+   * 「输入即显示」的判定本身：纯函数，不碰 DOM、不发请求。
+   *
+   * 抽出来是为了能直接验 —— 徽标的行为（什么时候出现、什么时候闭嘴）才是这个功能的
+   * 全部内容，而渲染桩里的 `useEffect` 是空实现，验不到。放到这里之后，
+   * 「与默认相同就不显示」「拿不准就不显示」「面板开着就不显示」都能一条一条断言。
+   *
+   * @param {string} draft 输入框里的草稿
+   * @param {{open?: boolean, defaultMode?: string|null, available?: string[], minChars?: number}} [options]
+   * @returns {{mode: string, signal: string, evidence: string[]}|null}
+   */
+  function computeInputHint(draft, options = {}) {
+    const text = typeof draft === 'string' ? draft.trim() : ''
+    const opts = options && typeof options === 'object' ? options : {}
+    const minChars = Number.isFinite(opts.minChars) ? opts.minChars : INPUT_HINT_MIN_CHARS
+    // 面板开着时让位给完整结论；草稿太短时闭嘴（半句话在哪个模式下都成立）。
+    if (opts.open === true || text.length < minChars) return null
+    const available = Array.isArray(opts.available) && opts.available.length
+      ? opts.available
+      : PRESET_BASELINE.columns.map((column) => column.id)
+    const local = recommendByRules(text, { available })
+    // 只有本地规则**定案**才出徽标：suggest / unknown 都意味着「拿不准」，
+    // 而拿不准时既不该打扰用户，也不该为了一个徽标去调模型。
+    if (local.kind !== 'decided' || !local.mode) return null
+    // 与当前默认相同 = 不用换。这时候「建议：X」是错的，X 本来就是当前模式。
+    if (typeof opts.defaultMode === 'string' && opts.defaultMode && local.mode === opts.defaultMode) return null
+    return { mode: local.mode, signal: local.signal, evidence: local.evidence }
+  }
+
+  /**
+   * 设置卡的纯视图：只依赖「快照 + 动作 + 词典」，不碰 ctx、不碰 DOM。
+   *
+   * 抽成纯函数是为了能验 —— 设置页在真机里跑，判据进不去；而这张卡最容易错的地方
+   * 恰恰是**读值**：`llmFallback` 读到 `undefined` 时若写成 `Boolean(x)` 就恒真，
+   * 用户明明关掉了却显示勾上。所以这里写 `value.llmFallback !== false`
+   * （只有明确 false 才不勾），并让判据逐条断这三种情形。
+   *
+   * @param {object|null} snapshot `configForms` 的快照：{status, value, writable}
+   * @param {{set?: (field: string, value: unknown) => void}} actions
+   * @param {(key: string) => string} t
+   */
+  function settingsCardView(snapshot, actions, t) {
+    const h = React.createElement
+    const text = typeof t === 'function' ? t : fallbackText
+    const status = snapshot && typeof snapshot.status === 'string' ? snapshot.status : 'unavailable'
+    // 命名空间没被宿主服务（旧宿主 / 行 id 不一致）：明说，而不是画一个改不动的假表单。
+    if (status === 'unavailable') {
+      return h('p', { className: 'npie-mg-card-note' }, text('settingsUnavailable'))
+    }
+    const value = snapshot && snapshot.value && typeof snapshot.value === 'object' ? snapshot.value : {}
+    const writable = !snapshot || snapshot.writable !== false
+    const set = actions && typeof actions.set === 'function' ? actions.set : () => undefined
+    const timeout = Number(value.timeoutMs)
+    return h('div', { className: 'npie-mg-card', 'data-status': status },
+      h('label', { className: 'npie-mg-card-row' },
+        h('input', {
+          type: 'checkbox',
+          checked: value.llmFallback !== false,
+          disabled: !writable,
+          onChange: (event) => set('llmFallback', event.target.checked === true),
+        }),
+        h('span', null, text('settingsFallback')),
+      ),
+      h('label', { className: 'npie-mg-card-row' },
+        h('span', null, text('settingsTimeout')),
+        h('input', {
+          type: 'number',
+          min: 1000,
+          max: 120000,
+          step: 1000,
+          value: String(Number.isFinite(timeout) && timeout > 0 ? timeout : 20000),
+          disabled: !writable,
+          // 越界不写：写进去会让宿主侧 schema 校验失败，用户看到的是「保存没反应」。
+          onChange: (event) => {
+            const next = Number(event.target.value)
+            if (Number.isFinite(next) && next >= 1000 && next <= 120000) set('timeoutMs', next)
+          },
+        }),
+      ),
+      h('p', { className: 'npie-mg-card-note' }, text('settingsHint')),
+    )
+  }
+
+  /**
+   * 插件页里「本行」的配置卡。
+   *
+   * 订阅一次、把快照交给纯视图渲染：字段改了就地重画，不用关页面。
+   */
+  function SettingsCard(props) {
+    const t = props.t || fallbackText
+    const form = props.form
+    const [snapshot, setSnapshot] = React.useState(() => (
+      form && typeof form.getSnapshot === 'function' ? form.getSnapshot() : null
+    ))
+    React.useEffect(() => {
+      if (!form || typeof form.subscribe !== 'function') return undefined
+      const off = form.subscribe(() => setSnapshot(form.getSnapshot()))
+      return () => {
+        if (typeof off === 'function') off()
+      }
+    }, [])
+    return settingsCardView(snapshot, {
+      set: (field, value) => {
+        if (form && typeof form.set === 'function') void form.set(field, value)
+      },
+    }, t)
+  }
+
+  /**
+   * 机会性取 `configForms`。
+   *
+   * 不写进 `inject`：旧宿主没有这个服务，写进去会让整个浏览器半区 `pending`，
+   * 连浮层都不出来 —— 为了一个设置卡把主功能弄没了，是本末倒置。
+   */
+  function settingsForm(ctx) {
+    try {
+      const forms = ctx && typeof ctx.get === 'function' ? ctx.get('configForms') : null
+      if (!forms || typeof forms.get !== 'function') return null
+      return forms.get(ROW_ID) || null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 按 id 取短名（徽标用）。
+   *
+   * `modeShortLabel` 要一个能力表列对象，而徽标是在打开面板之前算出来的 —— 那时
+   * 能力表可能还没合成（第一次用），也可能只有基线的四列。所以这里按 id 查词典，
+   * 查不到再回落到列名，最后才用 id 本身：徽标宁可显示英文 id，也不能空着。
+   */
+  function shortModeLabel(id, t, matrix) {
+    if (typeof id !== 'string' || !id) return ''
+    const key = MODE_SHORT_KEYS[id]
+    if (key) {
+      const value = t(key)
+      if (value && value !== key) return value
+    }
+    const columns = matrix && Array.isArray(matrix.columns) ? matrix.columns : []
+    const column = columns.find((item) => item && item.id === id)
+    return (column && column.name) || modeLabel(id, t, matrix) || id
+  }
+
   /** 用一条已知含汉字的词条反查界面语言，不猜宿主 locale 服务的 API。 */
   function uiLang(t) {
     return /[\u4e00-\u9fff]/.test(t('mode_ptc')) ? 'zh' : 'en'
@@ -1942,6 +2329,14 @@ window.__ModuleLoader__.load({
     // 最后一次判断的原文：默认模式改了要按新值重算两句理由，不能拿空输入框去算。
     const judgedTextRef = React.useRef('')
     const [pos, setPos] = React.useState({ left: 8, top: 8, arrowLeft: 24, maxHeight: 400, placement: 'above' })
+    /**
+     * 输入即显示的建议。null = 没有建议（不显示任何东西）。
+     *
+     * 只由**本地规则**产生 `kind === 'decided'` 的结论，所以：
+     *   - 不花配额、不发网络请求（决定不了就什么都不显示）；
+     *   - 与当前默认模式相同就不显示 —— 那等于「不用换」，说它只是噪音。
+     */
+    const [hint, setHint] = React.useState(null)
 
     // 这两个 hook 是 selector hook，必须传 (s) => s。详见文件头第 5 条。
     const inputState = typeof props.useInput === 'function' ? props.useInput((s) => s) : undefined
@@ -1953,10 +2348,43 @@ window.__ModuleLoader__.load({
     // 只有空白会话能切换预设：agentPresets.select 对已开始的会话会拒绝。
     const canApply = Boolean(sessionId) && Boolean(session && session.blank === true)
 
+    /**
+     * 输入即显示：草稿停手 500ms 判一次，只走本地规则。
+     *
+     * 依赖里必须有 `open`：面板一开，徽标就得让位给完整结论，否则同一个按钮上
+     * 出现两处说法。也不能在草稿为空时留着上一次的徽标 —— 用户可能刚把字删光。
+     *
+     * 判定只用 `rosterModeIds() || 基线列`：与正式判断同源，避免「徽标说创造、
+     * 打开之后说标准」这种自相矛盾。
+     */
+    const hintDelay = typeof props.hintDelayMs === 'number' ? props.hintDelayMs : INPUT_HINT_DEBOUNCE_MS
+    React.useEffect(() => {
+      const text = draft.trim()
+      if (open || text.length < INPUT_HINT_MIN_CHARS) {
+        setHint(null)
+        return undefined
+      }
+      const timer = setTimeout(() => {
+        const available = rosterModeIds() || PRESET_BASELINE.columns.map((column) => column.id)
+        const next = computeInputHint(draft, { open, defaultMode: currentDefaultMode(), available })
+        if (!next) {
+          setHint(null)
+          return
+        }
+        setHint((prev) => (prev && prev.mode === next.mode ? prev : { mode: next.mode }))
+      }, hintDelay)
+      return () => clearTimeout(timer)
+    }, [draft, open, defaultMode, hintDelay])
+
     const openSheet = () => {
-      setInput((prev) => (prev.trim() ? prev : draft))
+      const seed = input.trim() ? input : draft
+      setInput(seed)
       setTip(false)
       setOpen(true)
+      // 有徽标 = 本地规则已经定过案了，展开时直接把结论与理由画出来，
+      // 用户不用再点一次「判断」。**只在这种情况下自动判**：规则拿不准时没有徽标，
+      // 也就不会因为「打开看一眼」而白发一次模型请求。
+      if (hint && seed.trim()) void runJudge(seed)
     }
     const close = () => {
       judgeSeq.current += 1 // 作废在飞的判断，避免关闭后再 setState
@@ -2134,8 +2562,8 @@ window.__ModuleLoader__.load({
      *   ② 后台静默尝试实时预设校正（成功才替换表，理由也按新表重算，失败无感）；
      *   ③ 只有信号冲突 / 信息不足才问模型，带硬超时；失败保留结论并说明原因。
      */
-    const runJudge = async () => {
-      const text = input.trim()
+    const runJudge = async (override) => {
+      const text = (typeof override === 'string' ? override : input).trim()
       if (!text) return
       const seq = ++judgeSeq.current
       setApplyNote(null)
@@ -2276,6 +2704,9 @@ window.__ModuleLoader__.load({
             mode: current.mode,
             source: current.source,
             signal: current.local && current.local.signal ? current.local.signal : null,
+            // 命中的原词：错例聚类唯一的抓手。没有它，`--cluster` 只能说「又错了 3 次」，
+            // 说不出「这 3 次都是被同一个『插件』带跑的」—— 而后者才是能改的东西。
+            hits: current.local && Array.isArray(current.local.evidence) ? current.local.evidence.slice(0, 6) : [],
             defaultMode: currentDefaultMode(),
             lang: uiLang(t),
           }),
@@ -2305,20 +2736,28 @@ window.__ModuleLoader__.load({
     const verdict = state.verdict
     const matrix = state.matrix
 
+    // 徽标：把「建议」直接写在按钮上，不弹面板。点击仍走同一条路（展开面板读理由）。
+    const hintLabel = hint ? shortModeLabel(hint.mode, t, matrixRef.current) : ''
+    const badge = hint && !open
+      ? h('span', { className: 'npie-mg-badge', 'data-mode': hint.mode }, t('suggestPrefix') + hintLabel)
+      : null
+
     const trigger = h('button', {
       type: 'button',
       ref: anchorRef,
       className: 'npie-mg-trigger',
       'data-armed': String(open),
+      'data-hint': String(Boolean(badge)),
       'aria-haspopup': 'dialog',
       'aria-expanded': open,
-      'aria-label': t('triggerAria'),
+      // 徽标是视觉信息，读屏用户只能听到 aria-label：不带进来说等于没做这个功能。
+      'aria-label': badge ? `${t('suggestPrefix')}${hintLabel}，${t('triggerAria')}` : t('triggerAria'),
       onMouseEnter: showTip,
       onMouseLeave: () => setTip(false),
       onFocus: showTip,
       onBlur: () => setTip(false),
       onClick: () => (open ? close() : openSheet()),
-    }, h(ModeIcon, { size: 18 }))
+    }, h(ModeIcon, { size: 18 }), badge)
 
     const tipNode = tip && !open
       ? h('div', { className: 'npie-mg-tipbox', role: 'tooltip', style: { left: tipPos.left, top: tipPos.top } }, t('trigger'))
@@ -2556,6 +2995,13 @@ window.__ModuleLoader__.load({
     refineMatrix,
     readRoster,
     modeLabel,
+    // 输入即显示：徽标的判定是纯函数，判据直接验它的四个边界。
+    computeInputHint,
+    shortModeLabel,
+    INPUT_HINT_MIN_CHARS,
+    // 设置卡：视图是纯函数，判据验「读值不恒真 / 不可写不假扮可写」。
+    settingsCardView,
+    ROW_CONFIG_KEY,
     apply(ctx) {
       const t = makeTranslator(ctx)
 
@@ -2579,6 +3025,25 @@ window.__ModuleLoader__.load({
           if (typeof off === 'function') off()
         }
       }, 'dsh-npie-modeguide: composer slot')
+
+      /**
+       * 设置卡：挂到插件页「本行」的配置位。
+       *
+       * slot 名与 key 都是契约：`plugins.row.config` 没被声明时回调**根本不执行**
+       * （不报错），key 与行 id 不一致时卡片静默不出现。所以两处都写成常量并挂出来，
+       * 判据可以直接比对它们与 `cordis.patch.yml` 的 id 是否一致。
+       */
+      ctx.effect(() => {
+        if (typeof ctx.slots.inject !== 'function') return undefined
+        const off = ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
+          name: 'plugins.row.config',
+          key: ROW_CONFIG_KEY,
+          locale: PKG,
+        }, (cardProps) => React.createElement(SettingsCard, { ...cardProps, t, form: settingsForm(ctx) })))
+        return () => {
+          if (typeof off === 'function') off()
+        }
+      }, 'dsh-npie-modeguide: settings card')
     },
   }
 
