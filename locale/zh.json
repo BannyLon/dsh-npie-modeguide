@@ -48,6 +48,7 @@
     "feedbackFailed": "没记上",
     "statsShow": "本机统计",
     "statsHide": "收起统计",
+    "statsJudged": "判了几次",
     "statsRule": "规则定案",
     "statsModel": "模型定案",
     "statsDefault": "留在默认",

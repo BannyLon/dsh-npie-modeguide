@@ -1220,6 +1220,9 @@ function ModeGuide(props) {
         ? h('div', { className: 'npie-mg-stats' },
             h('ul', null,
               [
+                // 总数要画出来，否则「规则 + 模型定案 + 留在默认」三项之和与总数之间的关系
+                // 在界面上无法核对 —— 而那正是「来源切换先减后加」唯一能被发现的破绽。
+                [t('statsJudged'), sessionCounts.judged],
                 [t('statsRule'), sessionCounts.rules],
                 [t('statsModel'), sessionCounts.llm],
                 [t('statsDefault'), sessionCounts.default],
@@ -1229,6 +1232,9 @@ function ModeGuide(props) {
             hostStats
               ? h('ul', null,
                   [
+                    // 累计侧只有宿主自己的总数（judge），没有按来源拆分 —— 拆分是
+                    // 客户端本会话的视角，两者不能混在同一列里。
+                    [t('statsJudged'), hostStats.judge || 0],
                     [t('statsCalls'), hostStats.model],
                     [t('statsCache'), hostStats.cacheHit],
                     [t('statsLimited'), hostStats.limited],

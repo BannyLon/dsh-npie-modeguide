@@ -48,6 +48,7 @@
     "feedbackFailed": "not saved",
     "statsShow": "Local stats",
     "statsHide": "Hide stats",
+    "statsJudged": "verdicts",
     "statsRule": "decided by rules",
     "statsModel": "decided by model",
     "statsDefault": "kept the default",

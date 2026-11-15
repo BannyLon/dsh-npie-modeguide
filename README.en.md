@@ -334,10 +334,19 @@ Two columns with different sources and different definitions:
 
 | This session (client) | Cumulative (host in-memory counters) |
 |---|---|
-| verdicts issued | verdicts, of which rules / model review / default |
-| rules decided | model requests actually sent, plus those blocked by the quota |
-| model reviews | average model latency (sent requests only) |
-| fell back to default | 👍 / 👎 counts, and the counting start |
+| verdicts | verdicts |
+| of which rules | model requests actually sent |
+| of which model review | cache hits |
+| of which default | requests blocked by the quota |
+| — | average model latency (sent requests only) |
+| — | 👍 / 👎 counts |
+
+**Only the first row is the same quantity.** The left column splits by source
+(rules / model / default); the right column has the host's own total and does not split —
+the split is a *this session* view, and folding it into the cumulative column would present
+two definitions as one thing. The total is drawn on both sides so that "three cells sum to
+the total" can be checked on screen: that is the only place a "subtract before adding" bug
+becomes visible.
 
 When the source of a verdict changes, "this session" **subtracts before it adds**: a
 verdict moving from rules to model review decrements the rules cell, otherwise the three
@@ -349,6 +358,9 @@ is small). Average latency only covers requests actually sent: folding 429s and 
 hits in would make the figure look good and be wrong. `avgModelMs` is `null` with zero
 requests and the UI draws "—".
 
+The counting start is not drawn in the panel: `/stats` carries `since` and `uptimeMs`, but
+the panel only draws counts. `curl` the route if you want the start — a line saying "since
+14:03" reads more easily as "nothing was judged during that time" than as a timestamp.
 If the host half is absent (older version / route 404) the whole block says "stats
 unavailable" instead of showing a wall of zeros.
 
@@ -617,11 +629,13 @@ Known limitations, stated honestly:
   the case set; malformed lines are counted. The route returns 405 on `GET` and 400 on a
   bad `thumb` without writing anything.
   (3) **Local stats**: collapsed at the bottom of the panel, **fetched only when
-  expanded**. The client tracks `judged/rules/llm/default` per source — **subtracting
-  before adding** on a source change, otherwise the three cells exceed the total and the
-  numbers lie to the user. The host tracks judge / model / cacheHit / limited / modelMs /
+  expanded**. Both columns draw a "verdicts" total row, with the left one split into rules
+  / model review / default — the total is not decoration: it is the only place a
+  "subtract before adding" bug shows up (otherwise the three cells exceed the total and the
+  numbers lie to the user). The host tracks judge / model / cacheHit / limited / modelMs /
   feedbackUp / Down, and `avgModelMs` **covers only requests actually sent** (folding in
-  429s and cache hits would look good and be wrong), `null` when there are none.
+  429s and cache hits would look good and be wrong); `null` when there are none, drawn as
+  "—" rather than "0ms".
   (4) **Accessibility**: a real dialog — `aria-modal` + `role="dialog"` + `tabIndex: -1`,
   Tab / Shift+Tab cycling inside the panel, and `Esc` or × returning focus to the trigger
   (it used to drop to `body`); feedback buttons use `aria-pressed`. With a reverse control

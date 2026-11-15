@@ -715,7 +715,7 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
             status: 200,
             json: async () => ({
               ok: true,
-              stats: { model: 3, cacheHit: 2, limited: 1, avgModelMs: 420, feedbackUp: 4, feedbackDown: 2 },
+              stats: { judge: 77, model: 3, cacheHit: 2, limited: 1, avgModelMs: 420, feedbackUp: 4, feedbackDown: 2 },
             }),
           }
         }
@@ -1002,6 +1002,10 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
   assert.ok(fbTree.__fetches.some(([url]) => url === '/api/npie-modeguide/stats'), '展开时才去宿主取')
   assert.ok(containsText(fbTree.__latest(), '模型调用'), '展开后要有宿主计数')
   assert.ok(containsText(fbTree.__latest(), '420ms'), '平均耗时照实画，不编')
+  // 总数必须真画出来：「三项之和 = 总数」是「来源切换先减后加」唯一能被看见的破绽，
+  // 只画三个分项等于把核对依据藏掉。77 是宿主下发值，出现即证明真读了 payload。
+  assert.ok(containsText(fbTree.__latest(), '判了几次'), '要有总数行')
+  assert.ok(containsText(fbTree.__latest(), '77'), '总数要来自宿主下发，不是本地编的')
 
   // 配额用光：界面要说清「还要等多久」，而不是笼统说「模型没回应」。
   const limited = await renderWith(true, {
