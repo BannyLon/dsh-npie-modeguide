@@ -13,15 +13,22 @@ one, with **two verifiable sentences** explaining why.
 The four preset descriptions are abstract. Three common misconceptions:
 
 - "A simple task should use Minimal." **No** — Minimal exists for clean baseline comparisons, not convenience.
-- "Batch data processing needs a different mode." **Usually no** — the built-in default PTC already ships the `execute` code-mode tool. If you changed the new-task default in Settings → Agent Presets, the plugin follows your choice (see "New-task default").
+- "Batch data processing always needs a different mode." **Depends on your default** — the built-in default PTC already ships the `execute` code-mode tool, so with PTC as your default nothing needs to change. Only after you switch the new-task default to Standard does "process a batch of files" become a verdict for PTC (the plugin follows your default; see "New-task default").
 - "Creative has the most features, so it is best." **Not accurate** — it has no Office tools.
 
 ## Is there a simpler way?
 
-Yes. The four presets differ on only a few tools, so there are just **three** situations
-that genuinely require a mode change. Most of the time you do not need a decision at all:
+Yes. The four presets differ on only a few tools, so there are just **four** situations
+that genuinely require a mode change: writing plugins (Creative), workflow fan-out
+(Standard), clean baselines (Minimal), and processing a batch of files (PTC). Most of the
+time you do not need a decision at all:
 
 > **Leave it alone by default; Creative only for writing plugins; Standard for workflow fan-out; Minimal only for clean baselines.**
+
+Batch processing is deliberately left out of the mnemonic: it depends on your new-task
+default — with PTC as the default nothing changes, and only after you switch the default
+to Standard does it become a switch. That is also why it sits last in the decision table
+and needs corroborating evidence before it holds.
 
 This rule of thumb is also shown in the plugin's panel. Auto-detection mainly lowers the
 psychological barrier for new users; it does not improve accuracy, because whatever you

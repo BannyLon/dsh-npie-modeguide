@@ -1536,21 +1536,29 @@ test('README 写清了判断链路与配额：中英都有流程图和两张表'
   assert.ok(!en.includes('No budget on model fallback'), '英文 README 仍说没有配额')
 })
 
-test('文档口径与实现一致：三种换模式情形、超时以配置为准', () => {
+test('文档口径与实现一致：四种换模式情形、超时以配置为准', () => {
   const zh = readText('README.md')
   const en = readText('README.en.md')
-  const stale = '只有' + '四种' + '真正需要换模式的情形'
-  assert.ok(!zh.includes(stale), '中文 README 仍写着「四种」，与同文件后文「三种」打架')
-  assert.match(zh, /只有三种/)
-  assert.match(en, /just \*\*three\*\* situations/)
+  // 口径以规则实际能判出的为准：批量处理确实会被判成 PTC，所以是四种不是三种。
+  assert.match(zh, /只有四种/, '中文 README 的换模式情形数量与规则不符')
+  assert.ok(!zh.includes('只有' + '三种' + '真正需要换模式'), '中文 README 还留着旧的「三种」口径')
+  assert.match(en, /just \*\*four\*\* situations/, '英文 README 的换模式情形数量没跟上')
+  assert.ok(!en.includes('just **' + 'three** situations'), '英文 README 还留着旧的 three')
+  // 决策表必须真的列出四种可换的去向，否则「四种」只是个数字。
+  for (const mode of ['创造', '标准', '极简', 'PTC']) {
+    assert.match(zh, new RegExp('\\| [^|\\n]*' + mode + '[^|\\n]*\\|'),
+      `中文 README 决策表缺「${mode}」这一行`)
+  }
   assert.ok(
     !zh.includes('带 6s 硬超时') && !en.includes('with a 6s hard timeout'),
     '超时口径不许再写死 6s：实际等待由宿主 timeoutMs 派生',
   )
   assert.match(zh, /timeoutMs/)
   const rec = readText('src/recommender.js')
-  assert.match(rec, /\*\*只有三种\*\*/)
-  assert.ok(!rec.includes('只有四种真正需要换模式的情形'))
+  assert.match(rec, /\*\*只有四种\*\*/, '推荐引擎的文件头注释没跟上四类情形')
+  assert.ok(!rec.includes('只有' + '三种' + '真正需要换模式'), '推荐引擎仍写着旧的三种口径')
+  // 注释里只许有一种口径：两种数字同时存在，说明改了一处漏了一处。
+  assert.ok(!/\*\*只有三种\*\*/.test(rec), '注释里不该同时出现两种口径')
 })
 
 test('发布清单包含重建与刷新基线所需文件', () => {
