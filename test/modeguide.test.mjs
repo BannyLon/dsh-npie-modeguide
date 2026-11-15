@@ -1518,7 +1518,7 @@ test('README 写清了判断链路与配额：中英都有流程图和两张表'
   }
   assert.match(zh, /\| `pinned` 点名工具 \| 单条即可 \|/, '中文缺四层信号表')
   assert.match(en, /\| `pinned` names the tool \| one hit \|/, '英文缺同一张信号表')
-  assert.match(zh, /同一模式 \*\*≥2 条\*\*/, '中文没写「部分证据要两条」这条门槛')
+  assert.match(zh, /同一模式 \*\*凑够 2 条\*\*/, '中文没写「部分证据要凑够两条」这条门槛')
   assert.match(en, /\*\*two hits in the same mode\*\*/, '英文没写同一门槛')
   assert.match(zh, /反向词表/, '中文没写排错类不换模式')
   assert.match(en, /reverse word list/, '英文没写排错类不换模式')
@@ -1867,13 +1867,15 @@ test('单条线索不定案，两条才算：这正是「统计表格有多少�
   assert.equal(double.kind, 'decided')
   assert.equal(double.mode, 'ptc')
 
-  // 反向对照：把 support 门槛降回 1 条，同一句立刻回到旧误判。
+  // 反向对照：把门槛降回 1 条，同一句立刻回到旧误判。
   const loose = loadRecommender((s) => {
-    const b = s.replace('s.support.length >= 2', 's.support.length >= 1')
+    const b = s.replace('partialEvidence(s) >= 2', 'partialEvidence(s) >= 1')
     assert.notEqual(b, s, '门槛替换没命中')
     return b
   })
   assert.equal(loose.recommendByRules('帮我统计一下这份表格有多少行', { available: ALL_MODES }).mode, 'ptc')
+  // 但「一条部分证据 + 两条弱线索」要算够：批量 + csv/表格 就是真该用 execute 的。
+  assert.equal(judgeOne('批量把截图里的表格转成 csv').mode, 'ptc')
 })
 
 test('排错 / 查看类描述一律不换模式，且不发模型请求', () => {

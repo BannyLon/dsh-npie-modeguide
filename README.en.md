@@ -100,7 +100,7 @@ this job?":
 |---|---|---|---|
 | `pinned` names the tool | one hit | "write a plugin", "use a workflow" | An instruction; outranks everything else |
 | `strong` decisive feature | one hit | "batch process", "batch rename", "traverse" | The word itself means no other mode can do it |
-| `support` partial evidence | **two hits in the same mode** | "count", "rename", "dedupe", "workflow" | Part of a capability, not the whole of it |
+| `support` partial evidence | **two hits in the same mode** (a weak hint counts half) | "count", "rename", "dedupe", "workflow" | Part of a capability, not the whole of it |
 | `weak` direction hint | never | "tidy up", "spreadsheet", "panel" | Corroboration only |
 
 Plus a **composite rule**: an action word (add / edit / write / remove) and a DSH-internal
@@ -165,7 +165,7 @@ adjective here, it is a command you can run:
 
 ```bash
 npm run eval
-# [eval] 103/103 passed (100%), 68 cases · main 78/78 · heldout 25/25
+# [eval] 106/106 passed (100%), 70 cases · main 81/81 · heldout 25/25
 ```
 
 - Cases live in `test/eval/cases.json` (the set used while tuning) and
@@ -445,7 +445,7 @@ Known limitations, stated honestly (not yet changed):
   panel is too big" does not). (4) English rules brought up to parity: pinned phrasing per
   mode, ASCII matched on word boundaries (plurals count), English negation incl. curly
   apostrophes — fixing "write a plugin…" staying on the default. (5) `npm run eval` with
-  two case sets (68 cases / 103 assertions, 18 held out from tuning), enforced at 100% by
+  two case sets (70 cases / 106 assertions, 18 held out from tuning), enforced at 100% by
   `npm run check`. (6) Cache key now includes the default mode and prompt version, so
   changing the default no longer replays an old verdict. (7) Prompt de-anchored (example
   value is a placeholder) + `temperature: 0`; capability labels fenced as data, not

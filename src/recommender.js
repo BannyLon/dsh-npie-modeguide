@@ -319,6 +319,21 @@ function pairHits(text, pairs) {
   return out
 }
 
+/**
+ * 部分证据怎么算够：`support` 算 1 条，`weak` 算半条（两条弱线索 ≈ 一条部分证据）。
+ *
+ *   「批量把截图里的表格转成 csv」= 批量(1) + csv/表格(0.5+0.5，取整 1) = 2 → 定案 PTC
+ *   「帮我统计一下这份表格有多少行」= 统计(1) + 表格(0.5，取整 0) = 1 → 只是线索
+ *
+ * 第二条是要害：那是纯文本任务，标准模式的 bash 就能数行，绝不能被「统计」推去 PTC。
+ * 取整用 floor 且只对 weak 生效，就是为了让「一条部分证据 + 一条弱线索」仍然不够。
+ * @param {{support: string[], weak: string[]}} scored
+ * @returns {number}
+ */
+function partialEvidence(scored) {
+  return scored.support.length + Math.floor(scored.weak.length / 2)
+}
+
 /** 去掉重复与空串，保持出现顺序：同一个词可能同时出现在 strong / weak 里。 */
 function uniqueWords(list) {
   const out = []
@@ -432,9 +447,9 @@ export function recommendByRules(input, options = {}) {
 
   // 第三优先：有决定性信号的模式。
   //   strong 单条即可；组合判据（动作 + 对象）单条即可；
-  //   support 需要同一模式 ≥2 条（单条只是线索，不是证据）。
+  //   部分证据要凑够 2 条（见 partialEvidence）。
   const contenders = scored
-    .filter((s) => s.strong.length > 0 || s.pairs.length > 0 || s.support.length >= 2)
+    .filter((s) => s.strong.length > 0 || s.pairs.length > 0 || partialEvidence(s) >= 2)
     .sort((a, b) => (b.strong.length * 3 + b.pairs.length * 3 + b.support.length)
       - (a.strong.length * 3 + a.pairs.length * 3 + a.support.length))
 

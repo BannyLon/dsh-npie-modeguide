@@ -41,7 +41,6 @@
     "lang": "en",
     "why": "改主题只有创造模式能做"
   },
-
   {
     "text": "用工作流把这 200 个文件并行审一遍",
     "expect": "standard",
@@ -66,7 +65,6 @@
     "lang": "zh",
     "why": "工作流编排（strong）"
   },
-
   {
     "text": "做个纯净基线对照实验，看模型本身的表现",
     "expect": "minimal",
@@ -91,7 +89,6 @@
     "lang": "zh",
     "why": "基线对照（strong）"
   },
-
   {
     "text": "把这批 CSV 去重后按月份汇总",
     "expect": "ptc",
@@ -134,7 +131,6 @@
     "lang": "zh",
     "why": "点名 execute"
   },
-
   {
     "text": "我想写一首诗",
     "expect": "default",
@@ -183,7 +179,6 @@
     "lang": "zh",
     "why": "去重：同一句在两种默认下都必须不换"
   },
-
   {
     "text": "我装了个插件，为什么没生效？",
     "expect": "default",
@@ -250,7 +245,6 @@
     "lang": "en",
     "why": "弯引号也要能识别否定"
   },
-
   {
     "text": "帮我把这段话润色得更正式一些",
     "expect": "default",
@@ -304,5 +298,17 @@
     "expect": "default",
     "lang": "zh",
     "why": "写作"
+  },
+  {
+    "text": "批量把截图里的表格转成 csv",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "批量 + csv/表格：一条部分证据加两条弱线索"
+  },
+  {
+    "text": "帮我把这 20 个 markdown 文件的标题层级统一一下",
+    "expect": "default",
+    "lang": "zh",
+    "why": "只提到文件，没有任何能力证据"
   }
 ]
