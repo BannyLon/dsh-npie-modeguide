@@ -188,6 +188,59 @@ test('批量处理归 PTC（不是「标准」也不是「极简」）', () => {
   assert.equal(result.mode, 'ptc')
 })
 
+// ── 盲测抓到的错判：这四条都是「结论错了但理由读起来像事实」那一类 ──────────
+
+test('「遍历」单独出现不算决定性特征；遍历一批文件才算', () => {
+  // 遍历一个 JSON / 一个数组是普通编程，标准模式的 bash 就够 —— 不该换 PTC。
+  const objectOnly = recommendByRules('遍历一下这个 JSON 看看结构')
+  assert.notEqual(objectOnly.kind, 'decided', '遍历单个对象不该定案')
+  assert.equal(composeVerdict(objectOnly, null, 'standard').mode, 'standard')
+  // 反向对照：同一句话加上「目录 + 所有文件」就必须定案，否则是降级降成了漏判。
+  const bunch = recommendByRules('遍历目录下所有文件，把 jpg 改成 png')
+  assert.equal(bunch.kind, 'decided')
+  assert.equal(bunch.mode, 'ptc')
+})
+
+test('问「模式本身的区别」不是点名要用某个模式', () => {
+  // 「对比一下标准模式和 PTC 模式的区别」里有字面「PTC 模式」，pinned 会直接定案 ——
+  // 这是盲测里最容易骗过守卫的一条。
+  for (const text of ['对比一下标准模式和 PTC 模式的区别', '哪个模式适合做文档排版']) {
+    const result = recommendByRules(text)
+    assert.notEqual(result.kind, 'decided', `「${text}」不该定案`)
+    assert.equal(result.mode, null, `「${text}」不该给出模式`)
+    // 已确认不用换：既不问模型（noToolNeed），也不是排错文案。
+    assert.equal(result.noToolNeed, true, `「${text}」应标记为不需要换模式`)
+    assert.equal(composeVerdict(result, null, 'standard').mode, 'standard')
+  }
+})
+
+test('排错语境的词表覆盖「打不开 / 闪退 / 解释下」这类说法', () => {
+  const cases = [
+    '我的插件昨天还好好的今天打不开了',
+    '打开这个面板就闪退了',
+    '给我解释下这段代码是怎么遍历数组的',
+  ]
+  for (const text of cases) {
+    const result = recommendByRules(text)
+    assert.notEqual(result.kind, 'decided', `「${text}」是排错 / 解释，不该定案`)
+    assert.equal(result.noToolNeed, true, `「${text}」应压回默认模式且不再问模型`)
+  }
+  // 反向对照：不含排错语义的同类词仍然定案（别把 whole 词表撑成万能拦截器）。
+  assert.equal(recommendByRules('写个插件，给侧栏加一个按钮').mode, 'cordis')
+})
+
+test('规则表结构：ptc 的决定性特征里没有「遍历」，它只在组合判据与部分证据里', () => {
+  const src = readText('src/recommender.js')
+  const start = src.indexOf("id: 'ptc'")
+  assert.ok(start > 0, '没找到 ptc 规则块')
+  // 截到这条规则结束：MODE_RULES 里每条以「\n  },」收尾。
+  const ptcBlock = src.slice(start, src.indexOf('\n  },', start))
+  const strongLine = ptcBlock.split('\n').find((line) => line.trim().startsWith('strong:')) || ''
+  assert.ok(strongLine, '没找到 ptc 的 strong 行')
+  assert.ok(!strongLine.includes('遍历'), '「遍历」不许回到 strong：单条不足以定案')
+  assert.match(ptcBlock, /verbs: \['遍历'/, '组合判据里应保留遍历动词')
+})
+
 test('写插件归创造模式', () => {
   const result = recommendByRules('给我写个插件，在侧边栏加一个按钮')
   assert.equal(result.kind, 'decided')

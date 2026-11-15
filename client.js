@@ -1,6 +1,6 @@
 /**
  * dsh-npie-modeguide — 浏览器半区（由 build.mjs 生成，不要手改）。
- * source-sha1: 93fad1095f61ea568cc86798abcfb0f7fa948242
+ * source-sha1: 58880f3749d2aa55a75a52311100cf53fc66aa08
  *
  * 改逻辑请改 src/capabilities.js / src/recommender.js / adapter.js，然后 node build.mjs。
  */
@@ -498,9 +498,16 @@ window.__ModuleLoader__.load({
       // 内置清单里 PTC 常是新任务默认，但用户可以在设置里改。规则只认能力事实：
       // 它多出的唯一东西是 execute 代码执行器，用来批处理。
       pinned: ['用 ptc', 'ptc 模式', '用 execute', '用代码执行', 'use ptc', 'use execute', 'code execution'],
-      strong: ['批处理', '批量处理', '批量改', '批量重命名', '遍历', '逐条处理', '逐个处理',
+      // 「遍历」不在 strong 里：遍历一个 JSON、遍历一个数组都是普通编程，标准模式的
+      // bash 一样做得到。盲测里「遍历一下这个 JSON 看看结构」就是这么被判成 PTC 的。
+      // 它降成组合判据 —— 只有「遍历 + 一批文件/目录」才是 execute 的场景。
+      strong: ['批处理', '批量处理', '批量改', '批量重命名', '逐条处理', '逐个处理',
         '全量重跑', '一次性跑完', 'iterate over', 'for each file', 'bulk process', 'process all'],
-      support: ['批量', '逐条', '逐个', '去重', '汇总', '统计', '筛选', '清洗', '重命名', '分类',
+      pairs: [{
+        verbs: ['遍历', '遍历一遍', '逐个过'],
+        objects: ['目录', '文件夹', '所有文件', '全部文件', '这批文件', '一批文件', '每个文件', '子目录', '目录下'],
+      }],
+      support: ['批量', '遍历', '逐条', '逐个', '去重', '汇总', '统计', '筛选', '清洗', '重命名', '分类',
         '合并', '拆分', '全部文件', '所有文件', '脚本', '一次性',
         'batch', 'bulk', 'dedupe', 'deduplicate', 'aggregate', 'rename', 'merge', 'split', 'filter', 'traverse', 'script'],
       weak: ['csv', 'excel', '表格', '日志', 'log', '数据', '正则', 'regex', '目录下', '整理',
@@ -525,23 +532,51 @@ window.__ModuleLoader__.load({
    */
   const REVERSE_RULES = Object.freeze([
     // 中文：排错 / 查看 / 解释现状
-    '报错', '报错了', '报错了', '没生效', '不生效', '不管用', '不工作', '没反应', '没起作用',
+    '报错', '报错了', '没生效', '不生效', '不管用', '不工作', '没反应', '没起作用',
     '为什么', '为啥', '怎么回事', '怎么回', '什么原因', '原因是什么', '排查', '排错', '调试',
     '修一下', '修复一下', '挂了', '崩了', '崩溃', '失败', '哪里错', '错在',
-    '是干什么的', '干什么用的', '怎么用', '如何使用', '介绍一下', '解释一下', '什么意思',
+    // 「打不开 / 起不来 / 闪退」是同一类排错语境：说的是现状坏了，不是要写个新的。
+    // 「我的插件昨天还好好的今天打不开了」原先靠「插件」这条 strong 被判成创作，
+    // 而正确答案是留在默认模式去排错。
+    '打不开', '起不来', '用不了', '闪退', '装不上', '不显示', '没显示', '加载不出', '坏了',
+    // 只收「解释下 / 解释这个」这类动词形态，不收裸「解释」—— 否则「用 python 解释器
+    // 跑这批文件」会被当成排错。
+    '是干什么的', '干什么用的', '怎么用', '如何使用', '介绍一下', '解释一下', '解释下',
+    '解释这个', '解释这段', '帮我解释', '什么意思',
     '看看这个', '看一下这个', '帮我看看', '帮我看一下',
     // 英文
     'why', 'not working', 'stopped working', 'stops working', "won't start", 'not loading',
     "doesn't work", 'does not work', "don't work", 'error', 'errors',
     'failed', 'failing', 'broken', 'crash', 'crashed', 'debug', 'troubleshoot', 'fix the',
-    'how do i use', 'what does', 'what is the difference', 'explain',
+    'how do i use', 'what does', 'what is the difference', 'difference between',
+    "won't open", 'not opening', 'not starting', 'which mode', 'explain',
+  ])
+
+  /**
+   * 「在问模式本身」的句式：区别 / 哪个好 / 该选哪个 / 怎么选 / 优缺点。
+   *
+   * 这类句子里几乎必然出现「PTC 模式」「极简模式」这种字面，而 `pinned` 是**字面命中
+   * 即定案**的 —— 不先拦下来，「对比一下标准模式和 PTC 模式的区别」就会被判成
+   * 「你要用 PTC」。这是盲测抓到的真实错例，不是假想。
+   *
+   * 拦下来之后留在默认模式，既不问模型也不算排错：用户要的是看能力表，不是换模式。
+   */
+  const META_MODE_ASK = Object.freeze([
+    /(模式|预设|mode|preset)[^。！？!?\n]{0,14}(区别|不同|差异|哪个好|哪种好|怎么选|怎么挑|该选|优缺点|是什么|介绍|对比)/,
+    /(区别|不同|差异|对比|比较)[^。！？!?\n]{0,14}(模式|预设|mode|preset)/,
+    /(哪个|哪种|哪一个)[^。！？!?\n]{0,4}(模式|预设)/,
   ])
 
   /** 低于这个字符数不判：太短的输入没有信息量。 */
   const MIN_INPUT_CHARS = 4
 
-  /** 提示词版本号：改了提示词或规则语义就要 +1，否则旧缓存会冒充新逻辑的结论。 */
-  const PROMPT_VERSION = '2'
+  /**
+   * 提示词与**规则语义**的版本号。改了提示词、或改了规则能判出的结论，都要 +1。
+   *
+   * 结论缓存只按 `(版本, 默认模式, 输入, 能力表)` 做键：规则改了而版本不变，旧缓存会
+   * 拿着上一套规则的结论冒充新逻辑 —— 用户看到的就是「改了半天还是老答案」。
+   */
+  const PROMPT_VERSION = '3'
 
   /**
    * 把文本归一，方便匹配：小写、全角转半角、弯引号转直引号。
@@ -757,6 +792,16 @@ window.__ModuleLoader__.load({
     const label = (id) => {
       const rule = MODE_RULES.find((r) => r.id === id)
       return rule ? rule.id : id
+    }
+
+    // 第 0 优先：「在问模式本身」。必须排在 pinned 之前 —— 这类句子里「PTC 模式」是
+    // **被比较的对象**，不是「我要用 PTC」。命中即留在默认，不问模型也不算排错。
+    if (META_MODE_ASK.some((re) => re.test(text))) {
+      return emptyResult({
+        reason: '你在问模式本身（区别 / 该选哪个），不是在描述任务 —— 直接看下面的能力表',
+        signal: 'reverse',
+        noToolNeed: true,
+      })
     }
 
     // 第一优先：用户点名要某个工具。这是指令，不是特征 —— 直接定案。

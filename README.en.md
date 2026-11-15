@@ -106,7 +106,7 @@ this job?":
 | Tier | Decides on | Examples | Meaning |
 |---|---|---|---|
 | `pinned` names the tool | one hit | "write a plugin", "use a workflow" | An instruction; outranks everything else |
-| `strong` decisive feature | one hit | "batch process", "batch rename", "traverse" | The word itself means no other mode can do it |
+| `strong` decisive feature | one hit | "batch process", "batch rename", "process all in one go" | The word itself means no other mode can do it |
 | `support` partial evidence | **two hits in the same mode** (a weak hint counts half) | "count", "rename", "dedupe", "workflow" | Part of a capability, not the whole of it |
 | `weak` direction hint | never | "tidy up", "spreadsheet", "panel" | Corroboration only |
 
@@ -114,6 +114,11 @@ Plus a **composite rule**: an action word (add / edit / write / remove) and a DS
 object (panel / preset / shortcut / theme) inside the same short span means "modify DSH
 itself". Either half alone means nothing — "add some salt" or "this panel is too big"
 must not switch modes.
+
+The same rule also governs "traverse" for PTC: it is **not** a decisive feature. Walking a
+JSON object or an array is ordinary programming that Standard's bash already does; only
+"traverse + directory / all files / this batch" makes it an `execute` case. A blind test
+first judged "walk this JSON to see its shape" as PTC, and this downgrade fixed it.
 
 **Why `support` needs two hits**: 0.1.x decided on a single word, so "how many rows does
 this table have?" was judged as PTC — "count" really is part of the capability, but
@@ -172,7 +177,7 @@ adjective here, it is a command you can run:
 
 ```bash
 npm run eval
-# [eval] 106/106 passed (100%), 70 cases · main 81/81 · heldout 25/25
+# [eval] 119/119 passed (100%), 77 cases · main 94/94 · heldout 25/25
 ```
 
 - Cases live in `test/eval/cases.json` (the set used while tuning) and
@@ -441,6 +446,22 @@ Known limitations, stated honestly (not yet changed):
 
 ## Changelog
 
+- **0.2.1** (2026-11-16): **blind-tested on 20 real phrasings, four wrong verdicts
+  fixed.** The 0.2.0 case set was written by the same hand as the rules, so 100% only
+  proved self-consistency; this version re-checked against deliberately awkward wording
+  and hit exactly the dangerous class — a wrong verdict whose reason still reads like a
+  fact. (1) "traverse" is downgraded from a decisive feature to a composite rule: walking
+  a JSON object or an array is ordinary programming that Standard's bash already does;
+  only "traverse + directory / all files" is an `execute` case ("walk this JSON to see
+  its shape" used to be judged PTC). (2) A "you are asking about the modes themselves"
+  gate now runs **before** pinning — "compare the difference between Standard and PTC"
+  contains the literal "PTC mode" and used to be read as "I want PTC". (3) The reverse
+  list gains "won't open / crashes / won't install / broken / explain this" ("my plugin
+  worked yesterday and won't open today" used to be judged Creative). (4) Prompt and rule
+  version is raised to 3, so stale cached verdicts can no longer impersonate the new
+  rules. The case set grows to 77 cases / 119 assertions with four new guards (traverse
+  both ways, asking about modes, the new troubleshooting words, and a structural check on
+  the rule table), each verified with a reverse control.
 - **0.2.0** (2026-11-16): **the decision engine is rebuilt around accuracy, and it finally
   has a number.** (1) Signals are now tiered: a pinned tool or a decisive feature decides
   alone, **partial evidence needs two hits in the same mode**, hints never decide. This

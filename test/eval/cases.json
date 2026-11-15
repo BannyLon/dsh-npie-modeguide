@@ -310,5 +310,47 @@
     "expect": "default",
     "lang": "zh",
     "why": "只提到文件，没有任何能力证据"
+  },
+  {
+    "text": "遍历一下这个 JSON 看看结构",
+    "expect": "default",
+    "lang": "zh",
+    "why": "遍历单个对象是普通编程，标准模式的 bash 就够（盲测抓到的误判）"
+  },
+  {
+    "text": "给我解释下这段代码是怎么遍历数组的",
+    "expect": "default",
+    "lang": "zh",
+    "why": "解释类：要理解代码，不是要换模式"
+  },
+  {
+    "text": "遍历目录下所有文件，把 jpg 改成 png",
+    "expect": "ptc",
+    "lang": "zh",
+    "why": "反向对照：遍历 + 一批文件才是 execute 的场景，降级不能降成漏判"
+  },
+  {
+    "text": "对比一下标准模式和 PTC 模式的区别",
+    "expect": "default",
+    "lang": "zh",
+    "why": "问的是模式本身，「PTC 模式」是被比较的对象，不是点名要用"
+  },
+  {
+    "text": "哪个模式适合做文档排版",
+    "expect": "default",
+    "lang": "zh",
+    "why": "在问模式本身，答案在能力表里"
+  },
+  {
+    "text": "我的插件昨天还好好的今天打不开了",
+    "expect": "default",
+    "lang": "zh",
+    "why": "排错语境：插件坏了要修，不是要写插件"
+  },
+  {
+    "text": "what is the difference between standard and ptc",
+    "expect": "default",
+    "lang": "en",
+    "why": "English meta-question about modes, not a task"
   }
 ]
