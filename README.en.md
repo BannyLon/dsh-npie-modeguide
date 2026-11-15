@@ -43,8 +43,11 @@ with `npm run build` and relaunch (`client.js` is generated — without a rebuil
 changes).
 
 - **Capability table** — parsed from the installed kernel's real preset YAML into a build-time baseline, with a silent live refresh; refreshable after a DSH upgrade.
-- **Explainable, tiered decision** — local rules first, one model call only for genuine ambiguity, and two sentences whose capability facts are computed from the current table.
+- **Suggestion as you type** — a badge appears on the toolbar button once local rules decide; it costs no quota and issues no request. Clicking expands the reasoning.
+- **Tiered, explainable decision** — local rules first, one model call only for genuine ambiguity, and two sentences whose capability facts are computed from the current table.
+- **Measured, published accuracy** — gated case sets at 100%, three external sets taken from real session logs published as-is (first runs 63.6% / 72.5% / 85%), wrong cases clustered into rule changes.
 - **One-click apply on new sessions** — uses the official `agentPresets.select` remote; running sessions get advice instead of a button that is bound to fail.
+- **Settings card** — change fallback, provider, model and timeout in the settings page; no hand-editing `cordis.patch.yml`.
 
 ## The problem
 
@@ -243,6 +246,35 @@ verdict is also the default mode, but the reason says so explicitly ("hints only
 enough to justify switching"), so it is not dressed up as a finding. The cost is that a
 wrong local verdict cannot be rescued by the model; see Known limitations.
 
+## Showing a suggestion as you type: four steps become one
+
+Through 0.2.2 the flow was "type → click → wait → read the reason → click again". Only the
+last step is really needed; the first three are this plugin's cost — **when the cost
+outweighs the benefit, a correct verdict still goes unused.**
+
+Now: 500ms after you stop typing, the mode icon in the toolbar shows "Suggest: X" on its
+own. No panel opens, nothing moves. Clicking it expands the full verdict and reasoning
+(the verdict is already drawn — it does not wait for a second judgement).
+
+The conditions are deliberately narrow, each with a guard:
+
+| Condition | Behaviour | Why |
+|---|---|---|
+| Local rules **decided** (`kind === 'decided'`) | Show the badge | Only a decided verdict is worth stating; `suggest` and "unsure" stay quiet |
+| Verdict **differs from the current default** | Show the badge | If equal, "Suggest: X" is wrong — X is already the current mode |
+| Panel **not open** | Show the badge | With the panel open the full verdict is already on screen; a badge is noise |
+| Draft **≥ 8 characters** | Show the badge | "help me" or "change it a bit" holds in every mode; a badge on those trains users to ignore it |
+
+**This path issues no `fetch` at all.** The badge runs local rules only (milliseconds,
+offline, no model), so it spends no quota, never says "called too often", and works on a
+plane — a guard asserts that no network call exists inside the hint path, and fails if one
+is added.
+
+The trade-off: the badge only covers inputs the local rules can **decide**. On
+conflicting signals ("this plugin should batch-process these files") it shows nothing —
+that still needs one click to reach tier 3. That is deliberate: a permanent "probably
+right" badge is worse than no badge, because it makes people act on a guess.
+
 ## Accuracy: getting it right is the only acceptance line
 
 The plugin has exactly one purpose: **the verdict must be correct**. So accuracy is not an
@@ -250,27 +282,71 @@ adjective here, it is a command you can run:
 
 ```bash
 npm run eval
-# [eval] 133/133 passed (100%), 86 cases · main 108/108 · heldout 25/25
+# [eval]           133/133 passed (100%) · gated · main 108/108 · heldout 25/25
+# [eval:external]   54/55  passed (98.2%) · not gated
+# [eval:external2]  40/40  passed (100%)  · not gated
+# [eval:external3]  36/40  passed (90%)   · not gated
 ```
 
-- Cases live in `test/eval/cases.json` (the set used while tuning) and
-  `cases-heldout.json` (phrased completely differently, **never used for tuning**, only to
-  check generalisation).
+**There are two tiers of case set with different definitions — that is the most important
+sentence in this section.**
+
+| Set | File | Source | Gated in CI |
+|---|---|---|---|
+| main (tuning) | `test/eval/cases.json` | written by me; this is what I edit while tuning | ✅ must be 100% |
+| heldout | `test/eval/cases-heldout.json` | written by me, **never used for tuning**, only to check generalisation | ✅ must be 100% |
+| external ×3 | `external.json` / `-2` / `-3` | **verbatim user phrasings from real session logs** (redacted) | ❌ published only |
+
+Why the external set is not gated: gating it means heating the thermometer — it turns red, I
+change a rule, it turns green, and the world is no better. It is more useful **red**: that
+says "we still get this family of phrasings wrong today", which a green 100% cannot say.
+Use `--gate-external` once you have confirmed it really is "phrasings not written by me"
+and want to freeze it as a regression set.
+
+**Only the first run measures generalisation.** The three batches were pulled from session
+logs, redacted, labelled and run once, and only then did I touch the rules. The left column
+below is **before** any rule change; the right one is after (and proves only that those
+specific errors were fixed):
+
+| Batch | Cases | First run | After fixes | Rules changed in that revision |
+|---|---:|---:|---:|---|
+| external-1 | 55 | 63.6% (35/55) | 98.2% (54/55) | mostly one: "plugin" demoted from strong to an object name (that alone moved 63.6% → 87.3%); the rest came from later families |
+| external-2 | 40 | 72.5% (29/40) | 100% (40/40) | the other five: feature/interaction with generic verbs, possibility questions, pair window, negation, compound words |
+| external-3 | 40 | **85% (34/40, frozen before the run)** | 90% (36/40) | only two families of coverage added; 4 cases left as known defects |
+
+The third batch was **frozen first, then run**: after labelling I did not look at it again,
+ran it once at 85%, then added coverage for two families only. The remaining 4 cases —
+phrasings like "then add these two items: …" or "the toggle's title and aria-label should
+change from Inactive/Active to explicit wording", which carry **an imperative tone but no
+action verb** — are **left as known defects**; no hole was opened for them. Their common
+shape and why they stay unfixed are written up in `docs/benchmark-2026-11-16.md` §7.
+
+Two disclosures, without which the numbers above would be a lie:
+
+- **The phrasings are real; the labels are mine.** Inputs are verbatim `<user_query>`
+  entries from `~/.workbuddy/projects/*/*.jsonl`, redacted (no paths / links / tokens),
+  but "which mode this should be" is my own labelling. It shows how unseen phrasings fare
+  now; **it is not a third-party blind test**.
+- **The gap between 100% on the curated set and 63.6% on the first external run is the
+  true content of the "100%" claimed before 0.2.2.**
+
+Three rules govern the cases themselves:
+
 - Every case carries a `why`, so a failure immediately separates "implementation is wrong"
   from "the case itself is wrong".
 - More than half are "must not switch" cases, and those must hold under **two different
   defaults** (standard and ptc) — better to stay put than to switch wrongly.
-- `npm run check` runs the same evaluation and requires 100%; any failure exits 1.
+- `npm run check` runs the same evaluation and requires 100% on the first two tiers; any
+  failure exits 1.
 
 For reference: 0.1.11 scored 9 right, 2 lucky and 3 clearly wrong on a 14-case sample.
 "How many rows does this table have?" was judged PTC, "my plugin stopped working" was
 judged Creative, and "write a plugin that adds a sidebar panel" stayed on the default
 (English rules were almost non-existent). All three are regression cases now.
 
-The boundary, stated plainly: this is a **curated** set. It covers common phrasings, not
-every phrasing you might use. It proves "these cases are judged correctly", not "all
-phrasings are". The real safety net is the two checkable sentences in the UI — when a
-verdict is wrong you can see which row it is wrong about.
+The boundary, stated plainly: the external set proves "130 of these 135 phrasings are
+judged correctly", not "all phrasings are". The real safety net is the two checkable
+sentences in the UI — when a verdict is wrong you can see which row it is wrong about.
 
 ## Model-fallback quota
 
@@ -354,11 +430,17 @@ boundary above), and only you know when a verdict is wrong. One click records
 rule revision has to cover.
 
 Where it goes: `$DSH_PROFILE_DIR/npie-modeguide/feedback.jsonl`, one record per line.
-Only whitelisted fields are stored (`at / mode / kind / source / thumb / input /
-ruleVersion`) — anything extra in your input is never written, `at` is stamped by the
-host so forging it does nothing, and input over 500 characters is truncated to 500
-(keeping the evidence, not the whole prompt). At 5 MB the file rolls to a single
-`feedback.1.jsonl`.
+Only **ten** whitelisted fields are stored — `at / thumb / mode / source / signal /
+defaultMode / hits / lang / ruleVersion / input` — anything extra in your input is never
+written, `at` is stamped by the host so forging it does nothing, and input over 500
+characters is truncated to 500 (keeping the evidence, not the whole prompt). At 5 MB the
+file rolls to a single `feedback.1.jsonl`.
+
+`hits` (new in 0.3.0) records **which words this verdict matched**, up to six, each
+truncated to 24 characters. It exists for one reason: without them, `--cluster` can only
+say "this class was wrong three more times", never **"all three were dragged off by the
+same word"** — and only the latter translates into a rule change. `signal` and
+`defaultMode` serve the same purpose and are never shown in the UI.
 
 Three deliberate boundaries:
 
@@ -382,11 +464,39 @@ Summaries come from `npm run stats`:
 npm run stats              # adoption rate, per-mode / per-source split, the wrong inputs
 npm run stats -- --json    # for scripts
 npm run stats -- --recent 20
+npm run stats -- --cluster # cluster wrong cases + attribute them to a rule change
 ```
 
 Adoption is 👍 ÷ (👍 + 👎). **With no records it prints `null`, not 0%** — 0% reads as
 "every verdict was wrong". Malformed lines are counted and reported rather than skipped;
 the `input` of every 👎 is listed as a ready-to-paste block for `test/eval/cases.json`.
+
+`--cluster` turns "wrong again" into "this rule needs changing". It groups by **verdict +
+first matched word**, and each class gets one attribution plus one concrete action (a
+hand-built sample, only to show the shape):
+
+```
+wrong-case clusters (5 records → 3 classes)
+  2× · judged cordis · trigger "plugin"
+    cause: the object was taken as evidence of an action ("plugin" alone decided it)
+    fix:   demote "plugin" from strong to an object name, keep only verb+object pairs
+  1× · judged ptc · trigger "count"
+    cause: decided on a single signal (one decisive feature, or two partial hits)
+    fix:   read the input: if the signal is an object/topic, demote it; if it is a real
+           action, require two independent pieces of evidence
+```
+
+Two deliberate choices:
+
+- **Attribution uses only the signal and the matched words — it never guesses semantics.**
+  `signal` has five values (`none / weak / reverse / pinned / strong`) and every `decided`
+  verdict reports `strong`, whether it came from one decisive feature, a composite rule or
+  two partial hits. So the wording is "decided on a single signal", **not** "decided on a
+  single hint": the latter is a lie for "count + spreadsheet", and a false attribution is
+  worse than none — it sends you to change the wrong rule.
+- **When no cause can be named, it says "other: needs a human to read the input".** A guard
+  requires an unknown signal value to fall back to "other" — otherwise those branches are
+  tautologies.
 
 ## Local stats: what it actually did
 
@@ -574,6 +684,39 @@ model fallback could never return a verdict.
 setting and does not go into `cordis.patch.yml`: the host reads it live from
 `agentPresets.defaultId`. See "New-task default".
 
+### Or change it in the settings page (since 0.3.0)
+
+Settings → Plugins → this plugin's row now opens a settings card: an `llmFallback` toggle,
+`provider` / `model` inputs and `timeoutMs`. Changes take effect **in place, no restart**,
+because all four fields carry `.volatile()` in the `Config` schema.
+
+`.volatile()` is not decoration: the host only projects a namespace to the settings page
+when it contains volatile fields. Without it `projectForm` returns `undefined`,
+`describe()` discards the whole entry, and the plugin **does not exist** in the settings
+page — with no error. And a volatile field is a `{get()}` reference object inside `apply`,
+so a bare read is **always truthy**: `llmFallback: false` would be swallowed as "has a
+value", which is why `normalizeConfig` unwraps it. That has a reverse control.
+
+Three contract values — get one wrong and a whole block silently disappears:
+
+| Contract | Value | If wrong |
+|---|---|---|
+| Settings namespace | `npie-modeguide` (the `cordis.patch.yml` row id) | The plugin is absent from the settings page, no error |
+| Slot name | `plugins.row.config` | The callback **never runs**, no error |
+| Key | `dsh-npie-modeguide#npie-modeguide` | The card silently does not appear |
+
+Two deliberate conservatisms:
+
+- **`configForms` is not in `inject`** — it is fetched opportunistically with
+  `ctx.get('configForms')`. Older hosts lack the service, and declaring it would leave the
+  whole browser half `pending`, killing the panel to gain a settings card. When absent, the
+  card says so.
+- **An out-of-range `timeoutMs` is not submitted.** The host schema would reject it and the
+  user would see "saving does nothing"; refusing locally is the honest version.
+
+Editing `cordis.patch.yml` by hand still works (both paths write the same data); it is just
+no longer required.
+
 ## Development
 
 ```sh
@@ -653,9 +796,15 @@ Known limitations, stated honestly:
 - **The table has a version boundary, and the explanation shares it.** See the
   trade-off note above: the facts in the two sentences come from that table, never
   newer and never older.
-- **100% on a curated case set is not 100% on every phrasing.** See the Accuracy section.
-  That is the only reason the 👎 button exists: a sentence the case set cannot cover has
-  to be recorded by the person who saw it fail.
+- **"100% gated + 96% external" is not 100% on every phrasing.** See the Accuracy section:
+  the first external run at 63.6% is this plugin's real starting point; the 98.2% after
+  fixes only says those specific errors were repaired. That is the only reason the 👎
+  button exists: a sentence the case set cannot cover has to be recorded by the person who
+  saw it fail.
+- **The external phrasings are real, the labels are still mine.** That replaces half the
+  problem ("cases and rules written by the same hand") and none of the other half ("the
+  answer key is mine too"). A real third-party blind test needs humans — see
+  `docs/benchmark-2026-11-16.md` §5 item #6, not done.
 - **The quota is a constant, not a knob.** Capacity and refill live in `JUDGE_LIMITS`
   host-side, not in `cordis.patch.yml`; the reuse key is "text + table + default mode +
   prompt version", so adding "please" counts as a new input.
@@ -669,6 +818,61 @@ Known limitations, stated honestly:
 
 ## Changelog
 
+- **0.3.0** (2026-11-16): **the first release tested on phrasings nobody here wrote**, plus
+  two cost reductions in interaction and configuration. It implements 8 of the 13 items in
+  `docs/benchmark-2026-11-16.md` §5 — the ones that can be done without other people.
+  (1) **External blind test**: three batches, 135 inputs taken verbatim from real session
+  logs (redacted: no paths / links / tokens), labelled by me — stated in the case files and
+  in this README so nobody mistakes it for a third-party test. First runs 63.6% / 72.5% /
+  85% (the third frozen before the run), 98.2% / 100% / 90% after fixes. **Only the first
+  run measures generalisation**; the later numbers only prove those errors were fixed.
+  (2) **eval split into two tiers**: main + heldout are gated (133/133), external is
+  published only; `--gate-external` exists for freezing it once you have confirmed it is
+  genuinely external. Gating it would mean heating the thermometer.
+  (3) **Six systematic error families**, all from real phrasings rather than invented
+  trick questions: an object word ("plugin") deciding alone; "feature / interaction" paired
+  with generic verbs; "which features could be added" being a question, not an order; the
+  verb window missing when the verb follows the object by more than a dozen characters;
+  negation ("leave it for now") confused with A-not-A ("can this be made into a plugin");
+  and single-character verbs matching inside compounds ("加载" = "load" contains "加" =
+  "add"). Fixes: demote, new pair group, exclude, sentence-wide window, judge the two
+  separately, compound-word exclusion list. PTC also gained a "clean up a batch" pair rule
+  while "tidy up one spreadsheet" still stays put.
+  (4) **Suggestion as you type**: 500ms after you stop typing, local rules run; when the
+  verdict is decided and differs from the default the toolbar button shows "Suggest: X"
+  without opening the panel, and clicking it expands the reasoning (already computed).
+  Extracted into the pure function `computeInputHint` with four boundary guards and one
+  guard asserting **no network call inside that path** (no quota, works offline).
+  (5) **Settings card**: `Config` schema exported with all four fields `.volatile()`, since
+  the host only projects such namespaces to the settings page (without it the plugin is
+  simply absent, no error). A volatile field is a `{get()}` reference inside `apply` and
+  always truthy, so `llmFallback: false` must be unwrapped by `normalizeConfig`; that has a
+  reverse control. `configForms` is **not** declared in `inject` (older hosts lack it and
+  declaring it would leave the browser half pending — killing the main feature for a
+  settings card). All three contract values are constants with guards comparing them to
+  `cordis.patch.yml`.
+  (6) **Feedback records now support attribution**: `hits` records the matched words, and
+  `npm run stats --cluster` groups wrong cases by verdict + first matched word with a cause
+  and a concrete rule change. This release also **fixed a mistake of my own**: the cause
+  text said "decided on a single hint", but every `decided` verdict reports
+  `signal: strong` — two partial hits report it too, so "count + spreadsheet" was stamped
+  with a false cause that would send you to change the wrong rule. It now says "decided on
+  a single signal", gained `pinned` (literal pin misfire) and `weak` (hint presented as a
+  direction) branches, and a new guard requires **unknown signals to fall back to
+  "other"**, otherwise those branches are tautologies.
+  (7) **Publishable**: `LICENSE` (full MIT), `private: false`, `repository / homepage /
+  bugs / author`, `publishConfig`, bilingual badges and install notes. The install notes
+  follow measurement: `dsh plugin add` only runs pnpm add, so the name **must** also be
+  added to `dsh.profile.bundles`; otherwise nothing loads and nothing complains. CI now
+  runs `npm ci`, because since 0.3.0 the host half imports `@deepseek-ai/schemastery` and
+  "zero dependencies" no longer holds. Guards 109 → 121; gated eval 133/133; typecheck 0
+  errors.
+  **Not done, with reasons stated**: co-installation testing with routing-suite /
+  evolve-modes / model-router (requires installing three other repos), real-Chrome CDP
+  guards replacing the React mock (requires running the host), npm publish (this machine
+  reports `ENEEDAUTH`), plugin-directory listing (an external submission), and a real
+  third-party blind test (needs people). Those five are the remaining distance to "9.9";
+  see the status table in benchmark §5.
 - **0.2.2** (2026-11-16): **everything remaining in sections 9's P1 / P2 list is now
   implemented.** One gap drove all of it: 0.2.1's "100%" was self-consistent only on a
   curated case set, and the plugin had no way to learn that **it got a verdict wrong in

@@ -98,11 +98,18 @@ export function summarize(records, meta = {}) {
  * 归因（`because`）用的是**能落到规则改动上**的说法，不是「模型不准」这种废话：
  *
  *   - `宾语被当成动作证据` → 那个词要降级（strong → 对象名）
- *   - `只有一条线索就定案` → 门槛太低，或该词该降级
+ *   - `只凭单个信号就定案` → 门槛太低，或该词该降级
+ *   - `点名判据字面命中` → 给它加反向词，或要求与动作词同段
  *   - `该换却没换：无信号` → 缺词，需要按这一类说法补
  *   - `排错语境被当成需求` → 反向词表漏了这类说法
  *   - `否定没识别` → 否定词表漏词
  *   - `与该模式默认值相同` → 不是错判换模式，而是用户不认同默认值 → 不改规则
+ *
+ * **信号只有 5 种取值**（`none / weak / reverse / pinned / strong`，见
+ * `src/recommender.js`）：`decided` 一律报 `strong`，不管是「一条决定性特征」「组合
+ * 判据」还是「两条部分证据凑够」。所以这类归因只能说到「单个信号就定案」，**不能**
+ * 写成「只有一条线索」—— 那对「统计 + 表格」这种两条证据凑够的错判就是假话，
+ * 而假归因比没有归因更坏（它会指使你去改错的规则）。
  *
  * @param {object[]} wrong `summarize().wrong`
  * @returns {{key: string, mode: string|null, trigger: string|null, signal: string|null,
@@ -149,13 +156,23 @@ export function clusterWrong(wrong) {
     } else if (bucket.signal === 'strong' && bucket.trigger && OBJECT_WORDS.includes(bucket.trigger)) {
       because = `宾语被当成动作证据（「${bucket.trigger}」单独出现就定案）`
       action = `把「${bucket.trigger}」从 strong 降成对象名，只留「动作 + 对象」组合`
-    } else if (bucket.signal === 'weak' || bucket.signal === 'strong') {
-      because = '只有一条线索就给了结论'
-      action = '提高门槛（要两条证据），或把这个词降级'
+    } else if (bucket.signal === 'pinned') {
+      // 点名判据是「字面命中即定案」，最容易在「提到某个模式/某个词」时误触发。
+      because = '点名判据字面命中：句子里提到它，不等于要用它'
+      action = '给它补反向词，或要求与动作词同段才算点名'
+    } else if (bucket.signal === 'strong') {
+      // 这里**不能**说「只有一条线索」：decided 一律报 strong，两条部分证据凑够也报它。
+      because = '只凭单个信号就定了案（一条决定性特征，或两条部分证据凑够）'
+      action = '先看原文：这个信号是宾语/话题就降级；真是动作就把门槛提到两条独立证据'
+    } else if (bucket.signal === 'weak') {
+      // suggest 会带一个「倾向」的 mode。弱线索本来就只该给方向，不该被看见成建议。
+      because = '只有弱线索，却把某个模式说成了方向'
+      action = '删掉这条弱线索，或让 suggest 路径不再显示倾向'
     } else if (bucket.signal === 'none') {
       because = '该换却没换：没有任何信号'
       action = '按这两条原文补词（注意别把纯文本任务也带进去）'
     }
+
     out.push({ ...bucket, because, action })
   }
   // 多的排前面：改一条能少错很多次的优先。

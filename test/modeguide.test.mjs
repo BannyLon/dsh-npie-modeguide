@@ -2666,6 +2666,40 @@ test('错例聚类：同一个词带偏的三条合成一类，并给出「该�
   assert.match(sameDefault[0].because, /默认值/)
 })
 
+test('错例聚类：信号只有 5 种取值，每种都要有一条能落到规则改动上的归因', async () => {
+  const { clusterWrong } = await import('../scripts/stats.mjs')
+  // 真实的 5 种取值（src/recommender.js）：none / weak / reverse / pinned / strong。
+  // 每一条都取自真实记录的形状（含 defaultMode 与 hits），否则归因分支根本走不到。
+  const cases = [
+    { signal: 'strong', mode: 'cordis', hits: ['插件'], defaultMode: 'ptc', want: /宾语/ },
+    { signal: 'strong', mode: 'ptc', hits: ['统计', '表格'], defaultMode: 'standard', want: /单个信号/ },
+    { signal: 'pinned', mode: 'cordis', hits: ['写插件'], defaultMode: 'standard', want: /点名/ },
+    { signal: 'reverse', mode: null, hits: ['报错'], defaultMode: 'standard', want: /排错/ },
+    { signal: 'weak', mode: 'ptc', hits: ['整理'], defaultMode: 'standard', want: /弱线索/ },
+    { signal: 'none', mode: 'standard', hits: [], defaultMode: 'standard', want: /没换/ },
+  ]
+  for (const item of cases) {
+    // defaultMode 必须与结论错开，否则会先命中「与默认值相同」那条分支（它优先于一切）。
+    const defaultMode = item.mode === 'standard' ? 'ptc' : 'standard'
+    const [cluster] = clusterWrong([{ ...item, defaultMode }])
+    assert.ok(cluster, `signal=${item.signal} 必须能聚出一类`)
+    assert.match(cluster.because, item.want, `signal=${item.signal} 的归因必须具体，不能落到「其它」`)
+    assert.ok(!/^其它/.test(cluster.because), `signal=${item.signal} 落到了「其它」，等于没有归因`)
+  }
+
+  // 两条具体错法的措辞都不许撒谎：decided 一律报 strong，所以不能说「只有一条线索」。
+  const [generic] = clusterWrong([
+    { mode: 'ptc', signal: 'strong', hits: ['统计'], defaultMode: 'standard', input: '统计这张表' },
+  ])
+  assert.match(generic.because, /单个信号/, '两条部分证据凑够也报 strong，写成「只有一条线索」就是假归因')
+
+  // 反向对照：未知信号值必须落回「其它」——否则说明上面那些分支其实是恒真的。
+  const [unknown] = clusterWrong([
+    { mode: 'ptc', signal: 'weird', hits: ['x'], defaultMode: 'standard', input: 'x' },
+  ])
+  assert.match(unknown.because, /^其它/, '未知信号要老实说「需要人工归因」，不许硬套一条')
+})
+
 test('浮层可访问性：aria-modal 声明了就必须真把 Tab 关在里面', () => {
   const src = readText('adapter.js')
   assert.match(src, /'aria-modal': 'true'/, '对话框必须声明 aria-modal')
