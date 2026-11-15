@@ -1,6 +1,6 @@
 {
   "name": "dsh-npie-modeguide",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "description": "用自然语言描述任务，自动判断该用哪个 Agent 预设（标准 / PTC / 极简 / 创造）。本地规则优先，拿不准时才调一次模型；能力对照表从当前版本内核预设解析。",
@@ -19,6 +19,7 @@
     "client.js",
     "src",
     "build.mjs",
+    "tsconfig.check.json",
     "scripts",
     "test",
     "cordis.patch.yml",
@@ -63,6 +64,12 @@
     "test": "node --test test/*.test.mjs",
     "check": "node build.mjs && node --test test/*.test.mjs && node scripts/eval.mjs",
     "refresh:baseline": "node scripts/refresh-baseline.mjs",
-    "eval": "node scripts/eval.mjs"
+    "eval": "node scripts/eval.mjs",
+    "stats": "node scripts/stats.mjs",
+    "typecheck": "tsc -p tsconfig.check.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
   }
 }

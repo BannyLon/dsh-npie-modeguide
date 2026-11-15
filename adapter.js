@@ -53,6 +53,16 @@
 const PKG = 'dsh-npie-modeguide'
 const JUDGE_PATH = '/api/npie-modeguide/judge'
 const CONFIG_PATH = '/api/npie-modeguide/config'
+const FEEDBACK_PATH = '/api/npie-modeguide/feedback'
+const STATS_PATH = '/api/npie-modeguide/stats'
+
+/**
+ * 会话内计数：面板底部「本机统计」的左半边。
+ *
+ * 用模块级对象而不是 state：它只被统计区读，不需要触发重渲染；放进 state 反而
+ * 会让每次判定多一次渲染，而判定本来就是「当场出结论」这条链上最贵的一步。
+ */
+const sessionCounts = { judged: 0, rules: 0, llm: 0, default: 0 }
 
 /** 后台实时校正的硬超时；到点就放弃，界面早已用基线画好，没有任何等待态。 */
 const PRESET_TIMEOUT_MS = 2500
@@ -80,10 +90,15 @@ const POP_MIN_HEIGHT = 200
  * 冒充成用户的选择（这是 0.1.8 及以前的已知错误）。
  */
 const BUILTIN_DEFAULT_MODE = 'ptc'
-/** 浮层开着时复查默认的间隔：设置页与浮层同窗口，改完不会触发 focus。
- *  4 秒是刻意的：用户改完默认回来要立刻看到结论变化。为此宿主侧读过 profile
- *  会按 mtime 缓存解析结果，轮询不再是「每 4 秒同步读一次盘」。 */
-const DEFAULT_MODE_POLL_MS = 4000
+/**
+ * 浮层开着时复查默认的间隔。设置页与浮层在同一个窗口，改完默认不会触发 focus，
+ * 只有轮询能兜住这个场景。
+ *
+ * 12 秒是权衡后的值（报告建议 10–15s）：三条**即时**路径本来就会刷新 ——
+ * 每次判断、窗口回焦、标签页切回；轮询只是兜底。宿主侧读 profile 还有 mtime 缓存，
+ * 所以这个间隔的差别不在读盘成本，而在「面板长开时一小时问宿主多少次」。
+ */
+const DEFAULT_MODE_POLL_MS = 12000
 /** 官方 list() 兜底读取的上限：它内部可能 await loader.await() 永不返回。 */
 const DEFAULT_LIST_TIMEOUT_MS = 1200
 
@@ -202,6 +217,20 @@ button.npie-mg-btn[data-apply-tone="warn"]{background:#a8610b;border-color:trans
 .npie-mg-source{font-size:10.5px;color:var(--dsw-alias-label-secondary,#8b8798)}
 .npie-mg-reason{margin:0;font-size:11.5px;line-height:1.55;overflow-wrap:anywhere;color:var(--dsw-alias-label-primary,#1c1a24)}
 .npie-mg-evidence{margin:0;font-size:10.5px;line-height:1.45;color:var(--dsw-alias-label-secondary,#8b8798);overflow-wrap:anywhere}
+/* 反馈按钮必须显式 width:auto：宿主给裸 button 兜了 width:100%，进 flex 行会变横条。 */
+.npie-mg-fb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px}
+.npie-mg-fb-ask{font-size:10.5px;color:var(--dsw-alias-label-secondary,#8b8798)}
+.npie-mg-fb-btn{width:auto;height:22px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1,rgba(120,110,150,.28));border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:10.5px;cursor:pointer;outline:none;transition:background-color 150ms ease,border-color 150ms ease}
+@media (hover:hover){.npie-mg-fb-btn:hover:not(:disabled){background:rgba(127,127,127,.08)}}
+.npie-mg-fb-btn:focus-visible{box-shadow:0 0 0 2px var(--dsw-focus-ring-color,#6d3bf5)}
+.npie-mg-fb-btn:disabled{opacity:.55;cursor:default}
+.npie-mg-fb-btn[data-chosen="true"]{border-color:#6d3bf5;color:#6d3bf5;background:rgba(109,59,245,.08)}
+.npie-mg-fb-note{font-size:10.5px;color:var(--dsw-alias-label-secondary,#8b8798)}
+.npie-mg-fb-note[data-tone="warn"]{color:var(--dsw-alias-state-warn-primary,#a8610b)}
+.npie-mg-stats{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.npie-mg-stats ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.npie-mg-stats li{display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:2px 0;font-size:10.5px;color:var(--dsw-alias-label-secondary,#8b8798);border-bottom:1px dashed var(--dsw-alias-border-l1,rgba(120,110,150,.16))}
+.npie-mg-stats b{font-weight:650;color:var(--dsw-alias-label-primary,#1c1a24)}
 .npie-mg-note{margin:0;font-size:10.5px;line-height:1.45;color:var(--dsw-alias-state-warn-primary,#a8610b)}
 .npie-mg-mnemonic{margin:0;padding:1px 0 1px 9px;border-inline-start:2px solid rgba(109,59,245,.45);background:transparent;font-size:10.5px;line-height:1.5;color:var(--dsw-alias-label-secondary,#6c6879)}
 .npie-mg-disclosure{width:auto;padding:0;border:0;background:transparent;color:#6d3bf5;font:inherit;font-size:10.5px;cursor:pointer;outline:none;text-align:start}
@@ -216,7 +245,7 @@ button.npie-mg-btn[data-apply-tone="warn"]{background:#a8610b;border-color:trans
 .npie-mg-cond{color:var(--dsw-alias-state-warn-primary,#a8610b)}
 .npie-mg-legend{margin:4px 0 0;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-secondary,#8b8798)}
 @media (prefers-reduced-motion:reduce){.npie-mg-pop,.npie-mg-tipbox{animation:none}.npie-mg-trigger,.npie-mg-input,.npie-mg-btn{transition:none}}
-@media (prefers-color-scheme:dark){.npie-mg-trigger{background:rgba(167,139,250,.14);color:#a78bfa}.npie-mg-trigger[data-armed="true"]{background:rgba(167,139,250,.24)}.npie-mg-mark{background:rgba(167,139,250,.15);color:#a78bfa}.npie-mg-btn[data-primary="true"]{background:#7c4df0}.npie-mg-result{background:rgba(167,139,250,.09);border-inline-start-color:#a78bfa}.npie-mg-mnemonic{border-inline-start-color:rgba(167,139,250,.5)}.npie-mg-disclosure{color:#a78bfa}.npie-mg-input:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(167,139,250,.16)}}
+@media (prefers-color-scheme:dark){.npie-mg-trigger{background:rgba(167,139,250,.14);color:#a78bfa}.npie-mg-trigger[data-armed="true"]{background:rgba(167,139,250,.24)}.npie-mg-mark{background:rgba(167,139,250,.15);color:#a78bfa}.npie-mg-btn[data-primary="true"]{background:#7c4df0}.npie-mg-result{background:rgba(167,139,250,.09);border-inline-start-color:#a78bfa}.npie-mg-mnemonic{border-inline-start-color:rgba(167,139,250,.5)}.npie-mg-disclosure{color:#a78bfa}.npie-mg-input:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(167,139,250,.16)}.npie-mg-fb-btn[data-chosen="true"]{border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,.12)}}
 `
 
 /** 客户端拿不到 apply 的 config，配置由宿主 /api/npie-modeguide/config 现读。
@@ -229,9 +258,19 @@ let runtimeConfig = { llmFallback: true, timeoutMs: 20000 }
  */
 let hostDefaultMode = null
 
-/** 只认四个内置预设：能力表只有这四列，别的 id 不拿来切会话。 */
+/**
+ * 认一个可信的预设 id：**形状**校验，内置四个与用户自定义一视同仁。
+ *
+ * 0.2.1 及以前这里只认 `PRESET_IDS` 里的四个，于是用户在「设置 → Agent 预设」
+ * 里自建一个 `doc-writer` 并设为默认后，插件一边显示「未读到默认」、一边继续
+ * 拿内置 ptc 当兜底 —— 明明读到了，只是被自己的白名单否掉了。
+ *
+ * 放宽到形状校验后，「这个 id 到底存不存在」由 roster（agentPresets.list）确认；
+ * 默认模式读到了但 roster 里没有，仍然采用（那是宿主的权威值），只是切会话时
+ * 可能失败 —— `select()` 会拒绝，界面会明说原因。
+ */
 function trustedDefaultMode(id) {
-  return typeof id === 'string' && Object.prototype.hasOwnProperty.call(MODE_LABEL_KEYS, id) ? id : null
+  return isModeId(id) ? id : null
 }
 
 function currentDefaultMode() {
@@ -273,15 +312,22 @@ async function refreshConfig() {
 }
 
 /**
- * 主路径读不到默认时的第二来源：官方 `agentPresets.list()` 的 roster 里每项带
- * `isDefault`（宿主 `remoteExportList()` 当场用 `defaultId` 标出来）。
+ * 宿主实际装了哪些预设（roster）。**只有它知道有没有第五个模式。**
  *
- * 只在 /config 没给值时调，且带独立硬超时：list() 内部会 `await loader.await()`，
- * 历史上就是「预设读不到 / 判断中五分钟」的根源，绝不许进关键路径。
+ * `agentPresets.list()` 是唯一来源，但它内部会 `await loader.await()`，历史上就是
+ * 「预设读不到 / 判断中五分钟」的根源，所以这里加独立硬超时 + 60 秒缓存。
+ * 缓存不只是省一次调用：list() 超时返回空表时，不缓存就会每次轮询再挂 1.2 秒。
+ *
+ * 返回项统一成 `{ id, name, isDefault }`，只保留形状合法的 id —— roster 里混进
+ * 别的东西时宁可少一列，也不让一个奇怪的值进能力表。
  */
-async function readDefaultFromRoster(ctx) {
+const ROSTER_TTL_MS = 60000
+let rosterCache = { at: 0, rows: [] }
+
+async function readRoster(ctx) {
+  if (rosterCache.rows.length && Date.now() - rosterCache.at < ROSTER_TTL_MS) return rosterCache.rows
   const presets = presetsApi(ctx)
-  if (!presets || typeof presets.list !== 'function') return null
+  if (!presets || typeof presets.list !== 'function') return rosterCache.rows
   let res
   try {
     res = await withTimeout(
@@ -290,10 +336,34 @@ async function readDefaultFromRoster(ctx) {
       null,
     )
   } catch {
-    return null
+    return rosterCache.rows
   }
-  const rows = res && res.ok && res.value && Array.isArray(res.value.presets) ? res.value.presets : []
-  const hit = rows.find((row) => row && row.isDefault === true && trustedDefaultMode(row.id))
+  const raw = res && res.ok && res.value && Array.isArray(res.value.presets) ? res.value.presets : []
+  const rows = raw
+    .filter((row) => row && isModeId(row.id))
+    .map((row) => ({
+      id: row.id,
+      name: typeof row.name === 'string' && row.name ? row.name : row.id,
+      isDefault: row.isDefault === true,
+    }))
+  // 空表不写缓存：那是「这次没读到」，不是「宿主一个预设都没装」。
+  if (rows.length) rosterCache = { at: Date.now(), rows }
+  return rosterCache.rows
+}
+
+/** 判断时认可的预设 id；roster 没读到时返回 null，调用方退回构建期基线。 */
+function rosterModeIds() {
+  return rosterCache.rows.length ? rosterCache.rows.map((row) => row.id) : null
+}
+
+/**
+ * 主路径读不到默认时的第二来源：官方 roster 里 `isDefault === true` 的那一项。
+ *
+ * 只在 /config 没给值时用，且走同一个带缓存的 readRoster —— 绝不进关键路径。
+ */
+async function readDefaultFromRoster(ctx) {
+  const rows = await readRoster(ctx)
+  const hit = rows.find((row) => row.isDefault === true)
   return hit ? hit.id : null
 }
 
@@ -398,7 +468,13 @@ function presetsApi(ctx) {
 async function refineMatrix(ctx) {
   const presets = presetsApi(ctx)
   if (!presets || typeof presets.read !== 'function') return null
-  const ids = PRESET_BASELINE.columns.map((c) => c.id)
+  // 列 = 内置四列（顺序固定，能力差异表按它排）+ roster 里多出来的自定义预设。
+  // 用户建了第五个预设，能力表就该有第五列 —— 0.2.1 及以前只读内置四个，
+  // 自定义预设连一行都看不见，等于插件对它的存在装作不知道。
+  const baselineIds = PRESET_BASELINE.columns.map((c) => c.id)
+  const roster = await readRoster(ctx)
+  const extraIds = roster.map((row) => row.id).filter((id) => !baselineIds.includes(id))
+  const ids = [...baselineIds, ...extraIds]
   const docs = await Promise.all(ids.map(async (id) => {
     try {
       const doc = await withTimeout(presets.read(id), READ_TIMEOUT_MS, null)
@@ -409,9 +485,11 @@ async function refineMatrix(ctx) {
       return null
     }
   }))
-  const usable = docs.filter(Boolean)
-  // 少一列的表不如完整的基线：要么四列全换，要么一列不换。
-  return usable.length === ids.length ? buildMatrix(usable) : null
+  const byId = new Map(docs.filter(Boolean).map((doc) => [doc.id, doc]))
+  // **内置四列必须全读到**，否则一列都不换：缺列的表会把「不知道」画成「没有」，
+  // 而这四列是判断依据。自定义预设是加分项，读不到就少一列，不影响内置结论。
+  if (!baselineIds.every((id) => byId.has(id))) return null
+  return buildMatrix(ids.filter((id) => byId.has(id)).map((id) => byId.get(id)))
 }
 
 /**
@@ -475,6 +553,35 @@ function capLabel(row, t) {
   return value && value !== key ? value : row.label
 }
 
+/**
+ * 模式显示名：词典 → 能力表里的预设自带名字 → id 本身。
+ *
+ * 三级回落是为自定义预设准备的：词典只覆盖内置四个；用户在设置里把预设改名成
+ * 「文档模式」，能力表里读到的就是那个名字，界面应当照它显示，而不是退回一个
+ * `doc-writer` 这样的原始 id。
+ */
+function modeLabel(id, t, matrix) {
+  if (typeof id !== 'string' || !id) return ''
+  const key = MODE_LABEL_KEYS[id]
+  if (key) {
+    const value = t(key)
+    if (value && value !== key) return value
+  }
+  const columns = matrix && Array.isArray(matrix.columns) ? matrix.columns : []
+  const column = columns.find((item) => item && item.id === id)
+  return (column && column.name) || id
+}
+
+/** 表头短名：内置四个走词典短名；自定义预设用它的名字（表格只有 380px 宽）。 */
+function modeShortLabel(column, t) {
+  const key = MODE_SHORT_KEYS[column.id]
+  if (key) {
+    const value = t(key)
+    if (value && value !== key) return value
+  }
+  return column.name || column.id
+}
+
 /** 用一条已知含汉字的词条反查界面语言，不猜宿主 locale 服务的 API。 */
 function uiLang(t) {
   return /[\u4e00-\u9fff]/.test(t('mode_ptc')) ? 'zh' : 'en'
@@ -491,7 +598,7 @@ function withWhy(verdict, input, matrix, t, defaultMode) {
     why: explainVerdict(input, verdict, matrix, {
       lang: uiLang(t),
       defaultMode,
-      modeName: (id) => t(MODE_LABEL_KEYS[id] || '') || id,
+      modeName: (id) => modeLabel(id, t, matrix),
       capabilityLabel: (row) => capLabel(row, t),
     }),
   }
@@ -533,6 +640,11 @@ function ModeGuide(props) {
   const [applying, setApplying] = React.useState(false)
   const [applyNote, setApplyNote] = React.useState(null)
   const [matrixOpen, setMatrixOpen] = React.useState(false)
+  // 反馈：choice 一旦定下就锁住按钮，避免同一结论被反复记成两条相反的意见。
+  const [fb, setFb] = React.useState({ choice: null, status: 'idle' })
+  // 本机统计：展开时才去宿主取一次，关掉面板就重置，不当常驻轮询。
+  const [statsOpen, setStatsOpen] = React.useState(false)
+  const [hostStats, setHostStats] = React.useState(null)
   const [tip, setTip] = React.useState(false)
   const [tipPos, setTipPos] = React.useState({ left: 0, top: 0 })
   const anchorRef = React.useRef(null)
@@ -563,6 +675,28 @@ function ModeGuide(props) {
   const close = () => {
     judgeSeq.current += 1 // 作废在飞的判断，避免关闭后再 setState
     setOpen(false)
+  }
+
+  /**
+   * 键盘关闭（Esc / ×）时把焦点还给触发按钮。
+   *
+   * 点浮层外面关闭时**不还**：用户已经点到别处去了，抢回来只会让焦点乱跳。
+   */
+  const closeAndRestore = () => {
+    close()
+    const el = anchorRef.current
+    if (el && typeof el.focus === 'function') el.focus()
+  }
+
+  /**
+   * 浮层内可 Tab 到的元素。选择器覆盖原生控件与显式 tabindex，
+   * 并跳过 `disabled` —— 否则焦点会停在点不动的按钮上，看起来像界面卡住了。
+   */
+  const focusablesIn = (root) => {
+    if (!root || typeof root.querySelectorAll !== 'function') return []
+    const selector = 'button:not([disabled]),[href],input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    const nodes = root.querySelectorAll(selector)
+    return nodes && typeof nodes.length === 'number' ? Array.prototype.slice.call(nodes) : []
   }
 
   const showTip = () => {
@@ -672,7 +806,25 @@ function ModeGuide(props) {
     const onKey = (event) => {
       if (event.key === 'Escape') {
         event.stopPropagation()
-        close()
+        closeAndRestore()
+        return
+      }
+      // aria-modal 声明了「焦点在浮层里」，就必须真的把 Tab 关在里面：
+      // 只写 aria-modal 不拦 Tab，读屏用户还是会 Tab 到背后的工具栏。
+      if (event.key !== 'Tab') return
+      const nodes = focusablesIn(popRef.current)
+      if (!nodes.length) return
+      const active = typeof document !== 'undefined' ? document.activeElement : null
+      const at = nodes.indexOf(active)
+      const last = nodes.length - 1
+      if (event.shiftKey) {
+        if (at <= 0) {
+          event.preventDefault()
+          if (typeof nodes[last].focus === 'function') nodes[last].focus()
+        }
+      } else if (at === -1 || at === last) {
+        event.preventDefault()
+        if (typeof nodes[0].focus === 'function') nodes[0].focus()
       }
     }
     const onDown = (event) => {
@@ -702,14 +854,30 @@ function ModeGuide(props) {
     const seq = ++judgeSeq.current
     setApplyNote(null)
     judgedTextRef.current = text
+    // 新结论 = 新的反馈对象：上一次的 👍/👎 不该挂在这一条上。
+    setFb({ choice: null, status: 'idle' })
+    sessionCounts.judged += 1
+    // 同一句话可能先由规则定案、再被模型复核改写（source 从 rules 变 llm）。
+    // 统计要算「最后是谁定的」，所以换来源时把上一条减掉，不重复计。
+    let counted = null
+    const noteSource = (source) => {
+      if (counted && sessionCounts[counted] !== undefined) sessionCounts[counted] -= 1
+      counted = source
+      if (sessionCounts[source] !== undefined) sessionCounts[source] += 1
+    }
 
     const baseline = PRESET_BASELINE
-    const available = baseline.columns.map((c) => c.id)
+    // 认可的模式 = 宿主实际装了的（roster）；还没读到才退回构建期四列。
+    // 用户删掉某个内置预设之后，规则不该继续推荐它 —— 那样「切到这个模式」必失败，
+    // 而失败原因看起来像插件坏了，其实是它推荐了一个不存在的模式。
+    const available = rosterModeIds() || baseline.columns.map((c) => c.id)
     const local = recommendByRules(text, { available })
     matrixRef.current = baseline
     const shownDefault = defaultMode
+    const first = composeVerdict(local, null, shownDefault)
+    noteSource(first.source)
     setState({
-      verdict: withWhy(composeVerdict(local, null, shownDefault), text, baseline, t, shownDefault),
+      verdict: withWhy(first, text, baseline, t, shownDefault),
       matrix: baseline,
       busy: '',
       note: null,
@@ -744,10 +912,12 @@ function ModeGuide(props) {
     if (seq !== judgeSeq.current) return
     const llm = answer && answer.verdict ? answer.verdict : null
     const freshDefault = currentDefaultMode()
+    const finalVerdict = composeVerdict(local, llm, freshDefault)
+    noteSource(finalVerdict.source)
     setState((prev) => ({
       ...prev,
       busy: '',
-      verdict: withWhy(composeVerdict(local, llm, freshDefault), text, matrixRef.current, t, freshDefault),
+      verdict: withWhy(finalVerdict, text, matrixRef.current, t, freshDefault),
       // 配额用光与模型没回应必须说成两句不同的话：前者用户等一会儿就能再问，
       // 后者是能力问题。混成一句「模型没回应」会把「你点太快了」说成故障。
       note: llm ? prev.note : (quotaNote(answer, t) || t('fallbackNote')),
@@ -800,6 +970,52 @@ function ModeGuide(props) {
     }
   }
 
+  /**
+   * 👍/👎：把「这句话被判成什么」记到本机 JSONL。
+   *
+   * 只发这一条记录，不带任何设备/账号信息；宿主写不进文件就回 ok:false，
+   * 界面说「没记上」，不假装记过了 —— 假装的反馈闭环比没有更糟。
+   */
+  const sendFeedback = async (thumb) => {
+    const current = state.verdict
+    if (!current || fb.choice || fb.status === 'sending') return
+    setFb({ choice: thumb, status: 'sending' })
+    try {
+      const res = await fetch(FEEDBACK_PATH, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          thumb,
+          input: judgedTextRef.current,
+          mode: current.mode,
+          source: current.source,
+          signal: current.local && current.local.signal ? current.local.signal : null,
+          defaultMode: currentDefaultMode(),
+          lang: uiLang(t),
+        }),
+      })
+      const data = res.ok ? await res.json() : null
+      setFb({ choice: thumb, status: data && data.ok ? 'done' : 'failed' })
+    } catch {
+      setFb({ choice: thumb, status: 'failed' })
+    }
+  }
+
+  /** 展开统计时才读宿主计数：它变化很快，没必要跟着轮询。 */
+  const loadStats = async () => {
+    const { signal, cancel } = abortAfter(CONFIG_TIMEOUT_MS)
+    try {
+      const res = await fetch(STATS_PATH, { cache: 'no-store', signal })
+      if (!res.ok) return
+      const data = await res.json()
+      if (data && data.ok && data.stats) setHostStats(data.stats)
+    } catch {
+      // 读不到就显示客户端那一半，不编数字
+    } finally {
+      cancel()
+    }
+  }
+
   const verdict = state.verdict
   const matrix = state.matrix
 
@@ -830,7 +1046,9 @@ function ModeGuide(props) {
     ref: popRef,
     className: 'npie-mg-pop',
     role: 'dialog',
+    'aria-modal': 'true',
     'aria-label': t('sheetTitle'),
+    tabIndex: -1,
     'data-placement': pos.placement,
     style: {
       left: pos.left,
@@ -842,7 +1060,7 @@ function ModeGuide(props) {
   h('div', { className: 'npie-mg-head' },
     h('span', { className: 'npie-mg-mark' }, h(ModeIcon, { size: 14 })),
     h('span', { className: 'npie-mg-head-title' }, t('sheetTitle')),
-    h('button', { type: 'button', className: 'npie-mg-close', 'aria-label': t('close'), onClick: close }, '×'),
+    h('button', { type: 'button', className: 'npie-mg-close', 'aria-label': t('close'), onClick: closeAndRestore }, '×'),
   ),
   h('div', { className: 'npie-mg-scroll' },
     // 出了结论后这行用法说明就没用了：收起它，正好抵消两句详实理由带来的高度。
@@ -884,12 +1102,12 @@ function ModeGuide(props) {
           'aria-live': 'polite',
         },
         h('div', { className: 'npie-mg-result-head' },
-          h('span', { className: 'npie-mg-mode' }, t(MODE_LABEL_KEYS[verdict.mode] || '') || verdict.mode),
+          h('span', { className: 'npie-mg-mode' }, modeLabel(verdict.mode, t, matrix) || verdict.mode),
           verdict.source === 'llm' ? h('span', { className: 'npie-mg-source' }, t('byLlm')) : null,
           verdict.source === 'rules' ? h('span', { className: 'npie-mg-source' }, t('byRules')) : null,
           verdict.source === 'default'
             ? h('span', { className: 'npie-mg-source' }, defaultKnown
-                ? t('byDefault') + (t(MODE_LABEL_KEYS[defaultMode] || '') || defaultMode)
+                ? t('byDefault') + (modeLabel(defaultMode, t, matrix) || defaultMode)
                 : t('defaultTagFallback'))
             : null,
           canApply
@@ -913,6 +1131,33 @@ function ModeGuide(props) {
         // 命中词已经并进理由第一句，不再单独占一行：两句详实理由要换来高度，
         // 就把旧的 evidence 行撤掉，净增高控制在一行以内。
         h('p', { className: 'npie-mg-reason' }, verdict.why || verdict.reason),
+        // 反馈行：报告里「唯一的信号是用户有没有点按钮，这不叫信号」——
+        // 两个按钮各写清「对/不对」，落一条本机记录，绝不联网。
+        h('div', { className: 'npie-mg-fb' },
+          h('span', { className: 'npie-mg-fb-ask' }, t('feedbackAsk')),
+          h('button', {
+            type: 'button',
+            className: 'npie-mg-fb-btn',
+            'aria-pressed': String(fb.choice === 'up'),
+            'data-chosen': String(fb.choice === 'up'),
+            disabled: fb.status === 'sending' || Boolean(fb.choice),
+            onClick: () => void sendFeedback('up'),
+          }, t('feedbackUp')),
+          h('button', {
+            type: 'button',
+            className: 'npie-mg-fb-btn',
+            'aria-pressed': String(fb.choice === 'down'),
+            'data-chosen': String(fb.choice === 'down'),
+            disabled: fb.status === 'sending' || Boolean(fb.choice),
+            onClick: () => void sendFeedback('down'),
+          }, t('feedbackDown')),
+          fb.status === 'done'
+            ? h('span', { className: 'npie-mg-fb-note', role: 'status' }, t('feedbackThanks'))
+            : null,
+          fb.status === 'failed'
+            ? h('span', { className: 'npie-mg-fb-note', 'data-tone': 'warn', role: 'status' }, t('feedbackFailed'))
+            : null,
+        ),
         !canApply ? h('p', { className: 'npie-mg-evidence' }, t('lockedHint')) : null,
         applyNote
           ? h('p', {
@@ -940,7 +1185,7 @@ function ModeGuide(props) {
                 h('table', { className: 'npie-mg-table' },
                   h('thead', null, h('tr', null,
                     h('th', null, t('capability')),
-                    matrix.columns.map((c) => h('th', { key: c.id }, t(MODE_SHORT_KEYS[c.id] || '') || c.id)),
+                    matrix.columns.map((c) => h('th', { key: c.id }, modeShortLabel(c, t))),
                   )),
                   h('tbody', null, matrix.rows.map((row) => h('tr', { key: row.id },
                     h('td', { title: row.hint }, capLabel(row, t)),
@@ -957,6 +1202,47 @@ function ModeGuide(props) {
             : null,
         )
       : null,
+
+    // 本机统计：默认收起 —— 它是给「为什么这次判错」用的，不是日常要看的东西。
+    // 左边是客户端会话内计数（谁定的案），右边是宿主计数器（花了多少、被限流几次）。
+    h('div', null,
+      h('button', {
+        type: 'button',
+        className: 'npie-mg-disclosure',
+        'aria-expanded': String(statsOpen),
+        onClick: () => {
+          const next = !statsOpen
+          setStatsOpen(next)
+          if (next) void loadStats()
+        },
+      }, t(statsOpen ? 'statsHide' : 'statsShow')),
+      statsOpen
+        ? h('div', { className: 'npie-mg-stats' },
+            h('ul', null,
+              [
+                [t('statsRule'), sessionCounts.rules],
+                [t('statsModel'), sessionCounts.llm],
+                [t('statsDefault'), sessionCounts.default],
+              ].map(([label, value]) => h('li', { key: label },
+                h('span', null, label), h('b', null, String(value)))),
+            ),
+            hostStats
+              ? h('ul', null,
+                  [
+                    [t('statsCalls'), hostStats.model],
+                    [t('statsCache'), hostStats.cacheHit],
+                    [t('statsLimited'), hostStats.limited],
+                    // null = 一次模型请求都没发过，画「—」而不是「0ms」：0ms 在界面上
+                    // 读起来像「问过、很快」，和「没问过」是两件事。
+                    [t('statsAvg'), hostStats.avgModelMs == null ? '—' : hostStats.avgModelMs + 'ms'],
+                    [t('statsFeedback'), (hostStats.feedbackUp || 0) + ' / ' + (hostStats.feedbackDown || 0)],
+                  ].map(([label, value]) => h('li', { key: label },
+                    h('span', null, label), h('b', null, String(value)))),
+                )
+              : h('p', { className: 'npie-mg-legend' }, t('statsUnavailable')),
+          )
+        : null,
+    ),
   ),
   )
 
@@ -973,6 +1259,11 @@ module.exports = {
   computePopoverPosition,
   modelTimeoutMs,
   currentDefaultMode,
+  // 能力表合成与预设名回落也挂出来：任意预设这条路只有真调一次才验得准，
+  // 静态断言只能证明「写了 readRoster」，证明不了第五列真的出现。
+  refineMatrix,
+  readRoster,
+  modeLabel,
   apply(ctx) {
     const t = makeTranslator(ctx)
 

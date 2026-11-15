@@ -25,19 +25,42 @@
  */
 
 import { createHash, randomUUID } from 'node:crypto'
-import { readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { appendFileSync, mkdirSync, readFileSync, renameSync, statSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 // 提示词构造与 LLM 输出解析只有这一份。宿主与浏览器半区共用，避免两边各写一遍后漂移：
 // 测试测的是这一份，实际跑的也必须是这一份。
 import { buildLlmPrompt, parseLlmVerdict, PROMPT_VERSION } from './src/recommender.js'
 // 白名单只有这一份：浏览器半区构建时内联同一个文件，两处不许各写一遍。
-import { isPresetId } from './src/presets.js'
+// 宿主只关心形状（自定义预设也合法），「是不是内置四个」由规则引擎与词典使用。
+import { isModeId } from './src/presets.js'
 
 /** 判定路由。客户端 POST 这里。 */
 export const JUDGE_PATH = '/api/npie-modeguide/judge'
 
 /** 读配置的路由（客户端 `apply` 拿不到 config，见下）。 */
 export const CONFIG_PATH = '/api/npie-modeguide/config'
+
+/** 反馈落盘的路由（👍/👎）。只写本机文件，不联网、不发遥测。 */
+export const FEEDBACK_PATH = '/api/npie-modeguide/feedback'
+
+/** 本机统计的路由（计数器在宿主内存里，重载插件即清零）。 */
+export const STATS_PATH = '/api/npie-modeguide/stats'
+
+/**
+ * 反馈文件的位置与上限。
+ *
+ * 为什么放 profile 目录：那是宿主自己的可写数据目录（`DSH_PROFILE_DIR`），
+ * 卸载插件不会顺手删掉用户的反馈，也不该写进插件包目录（只读安装位置）。
+ *
+ * 为什么要有上限：这是一份**只追加**的文件，长期使用会无限长；到 5 MB 就滚一份
+ * `feedback.1.jsonl`（只保留一代）。不滚动的话，`npm run stats` 会越来越慢，
+ * 最后变成「统计命令跑不动、于是没人用」。
+ */
+export const FEEDBACK_LIMITS = Object.freeze({ maxBytes: 5 * 1024 * 1024, maxInputChars: 500 })
+
+/** 反馈与统计的文件名（目录由 profile 决定）。 */
+const FEEDBACK_DIR = 'npie-modeguide'
+const FEEDBACK_FILE = 'feedback.jsonl'
 
 /**
  * 模型兜底的配额。**唯一来源**：宿主按它限流，/config 也按它下发，界面文案再从
@@ -60,7 +83,7 @@ export const JUDGE_LIMITS = Object.freeze({
  * 令牌桶。
  * @param {{capacity?: number, refillMs?: number}} [limits]
  * @param {() => number} [now] - 注入时钟，判据里才能不真等 20 秒。
- * @returns {{take: () => {ok: boolean, remaining?: number, retryAfterMs?: number}}}
+ * @returns {{take: () => {ok: boolean, remaining?: number, retryAfterMs?: number}, refund: () => void}}
  */
 export function createTokenBucket(limits = JUDGE_LIMITS, now = () => Date.now()) {
   const capacity = Math.max(1, Number(limits?.capacity) || JUDGE_LIMITS.capacity)
@@ -220,7 +243,10 @@ export function parseDefaultFromPatch(text) {
     else deployed = value
   }
   const id = selected || deployed
-  return isPresetId(id) ? id : null
+  // 自定义预设也要认：这里只校验形状，不校验「是不是内置四个」——
+  // 用户在自己机器上建了 `doc-writer` 并设成默认，插件却报「未读到默认」，
+  // 那是插件的错，不是用户的。是否真的存在由 roster（agentPresets.list）确认。
+  return isModeId(id) ? id : null
 }
 
 /**
@@ -256,7 +282,9 @@ export function readDefaultMode(ctx, profileDir = process.env.DSH_PROFILE_DIR) {
   } catch {
     id = undefined
   }
-  if (isPresetId(id)) return id
+  // 内置与自定义一视同仁：宿主 registry 给的 `defaultId` 就是权威值，
+  // 插件只校验形状（见 src/presets.js 的 isModeId），不替用户否掉他自己的预设。
+  if (isModeId(id)) return id
   return readDefaultFromProfile(profileDir)
 }
 
@@ -292,6 +320,84 @@ export function normalizeConfig(config, ctx) {
     timeoutMs: Number.isFinite(timeout) && timeout > 0 ? Math.min(120000, timeout) : 20000,
     // 每次请求现读：用户在设置页改了默认，下一次 /config 或 /judge 立刻跟着变。
     defaultMode: readDefaultMode(ctx),
+  }
+}
+
+/**
+ * 反馈文件路径。没有 profile 目录（比如纯 CLI 环境）时返回 null ——
+ * 那种环境不该假装记录成功。
+ * @param {string|undefined} profileDir
+ * @returns {string|null}
+ */
+export function feedbackFilePath(profileDir) {
+  if (typeof profileDir !== 'string' || !profileDir) return null
+  return join(profileDir, FEEDBACK_DIR, FEEDBACK_FILE)
+}
+
+/**
+ * 校验并归一一条反馈。**只收白名单字段**：请求体来自浏览器，可能被手工构造。
+ *
+ * 为什么要留 `input`：只有知道「哪句话被判成什么」才能改进规则；但它是用户
+ * 原文，所以截到 500 字并且只留在**本机文件**里，绝不上报。
+ *
+ * @param {unknown} raw
+ * @param {() => string} [now]
+ * @returns {object|null} 非法输入返回 null
+ */
+export function normalizeFeedback(raw, now = () => new Date().toISOString()) {
+  /** 请求体来源不可信：只按白名单字段取值，多余字段一律丢弃。 */
+  const body = /** @type {Record<string, unknown>} */ (raw && typeof raw === 'object' ? raw : {})
+  const thumb = body.thumb === 'up' ? 'up' : body.thumb === 'down' ? 'down' : null
+  if (!thumb) return null
+  /**
+   * @param {unknown} value
+   * @param {number} max
+   * @returns {string}
+   */
+  const str = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
+  const rawSource = typeof body.source === 'string' ? body.source : ''
+  const source = ['rules', 'llm', 'default'].includes(rawSource) ? rawSource : null
+  return {
+    at: now(),
+    thumb,
+    mode: str(body.mode, 64) || null,
+    source,
+    signal: str(body.signal, 24) || null,
+    defaultMode: str(body.defaultMode, 64) || null,
+    lang: body.lang === 'en' ? 'en' : 'zh',
+    // 规则/提示词版本：没有它，三个月后没人能分清这条反馈是哪套规则下产生的。
+    ruleVersion: PROMPT_VERSION,
+    input: str(body.input, FEEDBACK_LIMITS.maxInputChars),
+  }
+}
+
+/**
+ * 追加一条反馈到本机 JSONL。**不抛** —— 反馈失败不该让界面报错。
+ *
+ * 滚动策略：超 5 MB 就把当前文件改名成 `feedback.1.jsonl`（只保留一代）。
+ * 这是一份只追加的文件，不滚动的话长期使用会无限长，`npm run stats` 也越来越慢。
+ *
+ * @param {object} record
+ * @param {string|undefined} profileDir
+ * @param {{maxBytes?: number}} [limits]
+ * @returns {{ok: boolean, error?: string}}
+ */
+export function appendFeedback(record, profileDir, limits = FEEDBACK_LIMITS) {
+  const file = feedbackFilePath(profileDir)
+  if (!file) return { ok: false, error: 'no-storage' }
+  try {
+    mkdirSync(dirname(file), { recursive: true })
+    try {
+      if (statSync(file).size > (limits.maxBytes || FEEDBACK_LIMITS.maxBytes)) {
+        renameSync(file, file.replace(/\.jsonl$/, '.1.jsonl'))
+      }
+    } catch {
+      // 文件还不存在 / 改名失败：继续往下写，丢记录比留不下更糟。
+    }
+    appendFileSync(file, JSON.stringify(record) + '\n', 'utf8')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'write-failed' }
   }
 }
 
@@ -514,6 +620,13 @@ export function apply(ctx, config) {
   // 每个插件实例一份配额与缓存：插件重载应该重置，而不是把上一轮的「用光了」带过来。
   const bucket = createTokenBucket(JUDGE_LIMITS)
   const cache = createVerdictCache(JUDGE_LIMITS)
+  /**
+   * 本机计数器：面板底部「本机统计」就是把这些数字加上客户端会话内的计数。
+   *
+   * 只在内存里、只在本机展示 —— 这不是遥测。插件重载即清零，因为它是
+   * 「这次运行发生了什么」，不是历史账本（历史在 feedback.jsonl 里）。
+   */
+  const stats = { judge: 0, model: 0, cacheHit: 0, limited: 0, modelMs: 0, feedbackUp: 0, feedbackDown: 0, since: Date.now() }
   ctx.inject(['webServer'], (webCtx) => {
     webCtx.effect(() => {
       const offConfig = webCtx.webServer.register({
@@ -550,6 +663,7 @@ export function apply(ctx, config) {
             res.end(JSON.stringify({ ok: false, error: 'untrusted-caller' }))
             return
           }
+          stats.judge += 1
           const raw = await readBody(req, 256 * 1024)
           let body
           try {
@@ -581,12 +695,14 @@ export function apply(ctx, config) {
             const key = judgeCacheKey(input, body?.matrix, cfg.defaultMode)
             const cached = cache.get(key)
             if (cached) {
+              stats.cacheHit += 1
               res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
               res.end(JSON.stringify({ ok: true, verdict: cached, cached: true }))
               return
             }
             const ticket = bucket.take()
             if (!ticket.ok) {
+              stats.limited += 1
               // 429 而不是「模型不可用」：界面要能说清「还要等多久」，用户才不会
               // 以为模型坏了、也不会以为插件没反应。
               res.writeHead(429, {
@@ -596,9 +712,16 @@ export function apply(ctx, config) {
               res.end(JSON.stringify({ ok: false, error: 'rate-limited', retryAfterMs: ticket.retryAfterMs }))
               return
             }
+            const modelStarted = Date.now()
             const out = await askModel(webCtx, input, body?.matrix, cfg)
             // 一次请求都没发（未配置模型 / llm 服务缺席）⇒ 退回刚扣的配额。
             if (!out.attempted) bucket.refund()
+            else {
+              // 只有真发出去的请求才计入「模型调用」与耗时：没发出去的请求
+              // 既没花钱也没延迟，算进去会让平均耗时看起来莫名其妙地低。
+              stats.model += 1
+              stats.modelMs += Date.now() - modelStarted
+            }
             const verdict = out.verdict
             if (verdict) cache.set(key, verdict)
             res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
@@ -614,10 +737,87 @@ export function apply(ctx, config) {
         },
       })
 
+      // ── 反馈：👍/👎 落本机 JSONL ────────────────────────────────────────
+      // 只写 `DSH_PROFILE_DIR` 下的文件，不联网、不发遥测。写不进去也回 200，
+      // 带上 error 让界面说「记录失败」，而不是弹一个「服务器错误」。
+      const offFeedback = webCtx.webServer.register({
+        kind: 'exact',
+        path: FEEDBACK_PATH,
+        handler: async (req, res) => {
+          if (req.method !== 'POST') {
+            res.writeHead(405).end()
+            return
+          }
+          const rejection = authorizeRequest(webCtx, req)
+          if (rejection) {
+            res.writeHead(rejection, { 'content-type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ ok: false, error: 'untrusted-caller' }))
+            return
+          }
+          // 反馈体很小：判错的原文已由客户端截断，8 KB 足够，超了就是有人在塞东西。
+          const raw = await readBody(req, 8 * 1024)
+          let body
+          try {
+            body = JSON.parse(raw)
+          } catch {
+            res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ ok: false, error: 'invalid-json' }))
+            return
+          }
+          const record = normalizeFeedback(body)
+          if (!record) {
+            res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ ok: false, error: 'invalid-feedback' }))
+            return
+          }
+          const stored = appendFeedback(record, process.env.DSH_PROFILE_DIR)
+          // 计数只算真的落盘了的：写失败却说「已记录 1 条」比不记更糟。
+          if (stored.ok) {
+            if (record.thumb === 'up') stats.feedbackUp += 1
+            else stats.feedbackDown += 1
+          }
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify(stored.ok ? { ok: true, stored: true } : { ok: false, error: stored.error }))
+        },
+      })
+
+      // ── 本机统计：内存计数器，重载插件即清零 ───────────────────────────
+      const offStats = webCtx.webServer.register({
+        kind: 'exact',
+        path: STATS_PATH,
+        handler: (req, res) => {
+          if (req.method !== 'GET') {
+            res.writeHead(405).end()
+            return
+          }
+          const rejection = authorizeRequest(webCtx, req)
+          if (rejection) {
+            res.writeHead(rejection, { 'content-type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ ok: false, error: 'untrusted-caller' }))
+            return
+          }
+          // 零请求时平均耗时是 `null` 而不是 0：一次都没发过，"平均 0ms" 会被读成
+          // "发过了而且很快"，那是把「没有数据」画成一个好看的数字。
+          const avgModelMs = stats.model ? Math.round(stats.modelMs / stats.model) : null
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({
+            ok: true,
+            stats: {
+              ...stats,
+              avgModelMs,
+              feedback: stats.feedbackUp + stats.feedbackDown,
+              uptimeMs: Date.now() - stats.since,
+            },
+          }))
+        },
+      })
+
       return () => {
         offConfig()
         offJudge()
+        offFeedback()
+        offStats()
       }
-    }, 'dsh-npie-modeguide: config + judge routes')
+    }, 'dsh-npie-modeguide: config + judge + feedback + stats routes')
   })
 }

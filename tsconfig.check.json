@@ -1,0 +1,19 @@
+{
+  "// 说明": "只做静态体检，产出为空（noEmit）。它不是验收线：报告 P2#18 要求『先只报错不阻断』，CI 里 continue-on-error。",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"]
+  },
+  "include": ["index.js", "src/**/*.js", "scripts/**/*.mjs"],
+  "exclude": ["node_modules", "client.js", "adapter.js", "test"]
+}

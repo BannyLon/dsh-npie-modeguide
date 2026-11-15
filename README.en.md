@@ -281,6 +281,95 @@ any model fallback** (so a click right after opening cannot use a stale fire-and
 value). Setting `llmFallback` to `false` suppresses the model request entirely;
 `timeoutMs` also sets how long the client is willing to wait.
 
+## Got it wrong? Press 👎 — feedback stays on your machine
+
+Below the verdict there is a "Was this right?" row with 👍 / 👎. It solves one specific
+problem: **a curated case set cannot prove a sentence nobody has written yet** (see the
+boundary above), and only you know when a verdict is wrong. One click records
+"input + verdict + reason + version" locally, and the pile becomes the cases the next
+rule revision has to cover.
+
+Where it goes: `$DSH_PROFILE_DIR/npie-modeguide/feedback.jsonl`, one record per line.
+Only whitelisted fields are stored (`at / mode / kind / source / thumb / input /
+ruleVersion`) — anything extra in your input is never written, `at` is stamped by the
+host so forging it does nothing, and input over 500 characters is truncated to 500
+(keeping the evidence, not the whole prompt). At 5 MB the file rolls to a single
+`feedback.1.jsonl`.
+
+Three deliberate boundaries:
+
+- **No network, no telemetry.** There is no upload endpoint and nothing is ever sent
+  automatically; delete the file and nothing remains.
+- **Locked after one press.** Both buttons go `disabled` and `aria-pressed` marks the
+  chosen one, so repeated clicking cannot record the same verdict dozens of times. To
+  change your mind, judge again.
+- **A failed write is reported as a failure.** Without a profile directory (signed out
+  or read-only environment) the host returns `no-storage` and the UI says "not recorded"
+  instead of pretending it worked — a silent failure makes feedback vanish while you
+  believe it is there.
+
+The server side is a single `POST /api/npie-modeguide/feedback` taking `{ thumb, mode,
+kind, source, input }`; anything other than `up | down` is a 400 and **nothing is
+written**, and `GET` on that route returns 405.
+
+Summaries come from `npm run stats`:
+
+```bash
+npm run stats              # adoption rate, per-mode / per-source split, the wrong inputs
+npm run stats -- --json    # for scripts
+npm run stats -- --recent 20
+```
+
+Adoption is 👍 ÷ (👍 + 👎). **With no records it prints `null`, not 0%** — 0% reads as
+"every verdict was wrong". Malformed lines are counted and reported rather than skipped;
+the `input` of every 👎 is listed as a ready-to-paste block for `test/eval/cases.json`.
+
+## Local stats: what it actually did
+
+"Local stats" at the bottom of the panel is collapsed by default and **only issues one
+`GET /api/npie-modeguide/stats` when expanded** — no one is watching, so there should be
+no request.
+
+Two columns with different sources and different definitions:
+
+| This session (client) | Cumulative (host in-memory counters) |
+|---|---|
+| verdicts issued | verdicts, of which rules / model review / default |
+| rules decided | model requests actually sent, plus those blocked by the quota |
+| model reviews | average model latency (sent requests only) |
+| fell back to default | 👍 / 👎 counts, and the counting start |
+
+When the source of a verdict changes, "this session" **subtracts before it adds**: a
+verdict moving from rules to model review decrements the rules cell, otherwise the three
+cells sum to more than the total and the numbers visibly lie.
+
+Cumulative counters live in host memory and **reset when the app restarts** (not
+persisted — that is a separate job with concurrency and rolling concerns, and the payoff
+is small). Average latency only covers requests actually sent: folding 429s and cache
+hits in would make the figure look good and be wrong. `avgModelMs` is `null` with zero
+requests and the UI draws "—".
+
+If the host half is absent (older version / route 404) the whole block says "stats
+unavailable" instead of showing a wall of zeros.
+
+## Keyboard and accessibility
+
+The panel is a real dialog, not a `div` styled like one:
+
+- `aria-modal="true"` + `role="dialog"`, with focus moved into the panel on open
+  (`tabIndex: -1`).
+- **Tab / Shift+Tab cycle inside the panel** and never escape to the chat composer below.
+- After `Esc` or the × button, focus is **returned to the button that opened it** (the
+  toolbar entry), not dropped on `body`. A keyboard user can close and reopen with one
+  Enter instead of tabbing through the page again.
+- Feedback buttons express selection with `aria-pressed`, not colour alone.
+
+All three have render-level guards: `aria-modal` really on the DOM node, Tab wrapping
+from the last focusable back to the first, and `document.activeElement` being the trigger
+after close — plus a reverse control that fails when the Tab loop is removed. Asserting
+only "the `aria-modal` attribute exists" would let a fake dialog that leaks on the first
+Tab pass.
+
 ## New-task default: follow the host, live
 
 The "default for new tasks" badge in Settings → Agent Presets is the user's choice, not
@@ -293,12 +382,22 @@ the `agent-preset-registry` row's `selectedDefault ?? default` in
 return `null`.
 
 The host reads it fresh on every `/config` and `/judge` and returns `defaultMode`.
-The browser side re-aligns when the panel opens, when the window regains focus, when
-the tab becomes visible, every 4 seconds, and on every "Recommend" click (the settings
-page and the panel share a window, so changing the default does **not** fire `focus` —
-the periodic check is essential). When the value changes it (1) recomputes any
+The browser side re-aligns on three **immediate paths** plus one fallback: opening the
+panel, the window regaining focus, and the tab becoming visible all read it at once;
+otherwise it re-checks every **12 seconds** (the settings page and the panel share a
+window, so changing the default does **not** fire `focus` — the periodic check is
+essential, but it is a fallback, not the main path: switching back to the panel after
+changing the default is already enough). When the value changes it (1) recomputes any
 "no switch needed" verdict against the new default, (2) recomputes both explanatory
 sentences, and (3) updates the "current default: X" label.
+
+The period was widened from 4s to 12s because the cost/benefit was lopsided: every
+check crosses a host route to read `agentPresets.defaultId`, while changing the default
+**necessarily** involves switching windows — and the immediate path already covers
+that. 4s only covered "staring at the settings page side by side with the dsh window".
+The trade-off, stated plainly: if you change the default on a second monitor without
+leaving the settings page, the panel label may lag by up to 12 seconds — clicking
+"Recommend" in the meantime reads it freshly, so a stale default never decides a verdict.
 
 When the verdict **is** the current default, the primary button becomes "Keep current
 default" and gives a visible "No switch needed" result instead of calling `select()` —
@@ -310,10 +409,23 @@ than pretending PTC was your choice; only then does it fall back to the official
 ## Capability table: baseline plus live refresh
 
 `src/preset-baseline.json` is generated from the four real
-`dsh-web-app/presets/*.patch.yml` files inside the installed `app.asar` (4 columns,
-13 differing rows) and inlined into `client.js` by `build.mjs`. Run
-`npm run refresh:baseline && npm run build` after a kernel upgrade. Custom presets are
-not included, which is what lets us avoid the hanging `list()` path.
+`dsh-web-app/presets/*.patch.yml` files inside the installed `app.asar` (**four baseline
+columns**, 13 differing rows) and inlined into `client.js` by `build.mjs`. Run
+`npm run refresh:baseline && npm run build` after a kernel upgrade; at runtime the table
+is replaced by the live version when all four built-ins read back successfully.
+
+**Presets you create yourself get a column too.** The header is the four baseline
+columns (fixed order) plus any extra ids from the roster (`agentPresets.list()`, with a
+60s cache and its own hard timeout, strictly in the background). If you add a fifth
+preset, the table should show a fifth column — through 0.2.1 it read only the four
+built-ins, so a custom preset did not even appear as a row, as if the plugin pretended
+it did not exist.
+
+The swap condition is layered on purpose: **all four built-in columns must read back**,
+otherwise the whole table is kept (a table missing a column paints "unknown" as "none",
+and those four columns are the basis of the verdict); a custom preset is a bonus, so its
+own failed `read()` only costs that one column. The table can therefore be "four
+built-ins plus some customs", never half a table.
 
 Trade-off: if Remote is unavailable and the baseline was not refreshed after a kernel
 upgrade, the table can be one version behind. The verdict and one-click apply are
@@ -322,11 +434,15 @@ so run `refresh:baseline` after upgrading. When a live refresh succeeds, the tab
 the explanation are **recomputed together**: row count and every capability's
 distribution are read from the current table, with no residue from the old baseline.
 
-Another boundary: the four mode ids used for judging come from baseline columns, not a
-live profile roster. The table and the main decision path never call `list()`, which can
-hang forever (the default-mode fallback above is the only timed exception). If you remove
-a built-in preset from your profile, the plugin may still recommend it; `select()` will
-then fail and the button will state the reason.
+The ids accepted for judging also come from the roster (used when read, falling back to
+baseline columns when not). After you delete a built-in preset from your profile the
+plugin **no longer recommends it** — 0.2.1 did, and then `select()` failed, leaving the
+user with a button that would not move. Conversely, any shape-valid id in the roster
+counts as available, so a custom preset can be both recommended and switched to.
+
+The only remaining `list()` call on this path is here and the default-mode fallback;
+both are background, both carry an independent 1.2s hard timeout, and failure always
+means "unreadable" — never on the click's critical path.
 
 ## One-click apply limitation
 
@@ -389,11 +505,23 @@ node build.mjs        # inline src/*.js + adapter.js + locale dictionaries into 
 node --test test/*.test.mjs
 node scripts/eval.mjs # accuracy evaluation (npm run eval)
 node build.mjs && node --test test/*.test.mjs && node scripts/eval.mjs   # npm run check
+npm run stats         # local feedback summary (adoption / per mode / wrong inputs)
+npm run typecheck     # tsc --checkJs, non-blocking health check
 ```
 
 `client.js` is generated; never edit it by hand. Change `src/presets.js` (whitelist),
 `src/capabilities.js` (parsing), `src/recommender.js` (rules and prompt), `adapter.js`
 (UI), or `locale/*.json` (copy), then rebuild.
+
+**`npm run typecheck` is a health check, not a gate.** `tsconfig.check.json` turns on
+`allowJs + checkJs` with `noEmit`, and `include` covers the host half and `scripts/` while
+**deliberately excluding `adapter.js`**: that file leans on dynamic properties such as
+`ctx.remote` that only exist at runtime, so a full inference pass produces noise, and the
+only way to silence noise is a pile of `any` — which is the same as turning the check
+off. The CI step is `continue-on-error`: it catches real mistakes (this release it found
+4 genuine ones among 17 reports — a missing `refund` in `@returns`, `hits` declared
+`string[]` while receiving a frozen array, an unannotated `str()` parameter), but
+inference false positives should not block a commit.
 
 **Changing a rule starts with `npm run eval`.** The rules are the only thing that affects
 whether the verdict is right, and there is no type system behind them: adding one word can
@@ -432,15 +560,16 @@ conflict does — two guards that act as each other's reverse control.
   service is absent does a local fallback apply (cross-site refused, `dsh-auth-*` name
   required, non-loopback peers refused).
 
-Known limitations, stated honestly (not yet changed):
+Known limitations, stated honestly:
 
-- **Only the four built-in presets.** The whitelist exists once in `src/presets.js` (the
-  host imports it, the client inlines it), but the capability table only has those four
-  columns. If you add a preset, the plugin cannot read it as the default (the UI says
-  "no default found, falling back to built-in PTC") and the rules will never recommend it —
-  there is no capability data to reason from. Real "any preset" support means reading that
-  preset's content back from the roster, parsing a fifth column, and teaching the rules
-  where it is exclusive; half of that equals advice with no basis.
+- **Capability data still comes from "the preset content read back", not "a declaration
+  read back".** The roster tells us *which* presets exist, but *what a preset can do* only
+  comes from `agentPresets.read(id)` returning its YAML body to parse. So whether a custom
+  preset gets a column depends on that `read()` succeeding — it is itself a call that can
+  fail, with a 1.2s timeout. When it fails the column is missing and the rules will
+  **not** recommend it (no capability data means no basis; half of it equals advice with
+  no basis). The boundary is real — it just moved from "never supported" to "supported
+  when readable".
 - **Rules handle explicit phrasings, not semantics.** "Do not write a plugin",
   "no workflow" and "don't use workflow" are filtered before a keyword counts as a hit,
   but irony such as "it's a plugin, sort of" still matches. Local rules are tiered
@@ -449,12 +578,72 @@ Known limitations, stated honestly (not yet changed):
   trade-off note above: the facts in the two sentences come from that table, never
   newer and never older.
 - **100% on a curated case set is not 100% on every phrasing.** See the Accuracy section.
+  That is the only reason the 👎 button exists: a sentence the case set cannot cover has
+  to be recorded by the person who saw it fail.
 - **The quota is a constant, not a knob.** Capacity and refill live in `JUDGE_LIMITS`
   host-side, not in `cordis.patch.yml`; the reuse key is "text + table + default mode +
   prompt version", so adding "please" counts as a new input.
+- **Cumulative stats do not survive a restart.** They are host-memory counters that reset
+  after `Cmd+Q`; adoption comes from the JSONL instead, so `npm run stats` sees history
+  across restarts while the panel's "cumulative" column reflects this run only.
+- **Feedback is not a correction loop.** 👎 is a record; it does not rewrite rules or
+  re-judge past verdicts. Treating "the user said it was wrong" as "the rule must change"
+  is its own kind of inaccuracy — one misclick should not contaminate every verdict. It is
+  **evidence for a human**, not a training signal.
 
 ## Changelog
 
+- **0.2.2** (2026-11-16): **everything remaining in sections 9's P1 / P2 list is now
+  implemented.** One gap drove all of it: 0.2.1's "100%" was self-consistent only on a
+  curated case set, and the plugin had no way to learn that **it got a verdict wrong in
+  real use**. This release closes that gap.
+  (1) **Any preset** (no longer "the four built-ins only"): `src/presets.js` splits into
+  two lists — `PRESET_IDS` as the exact whitelist (the four built-ins, which must **not**
+  widen, since widening would certify ids with no capability data) and `isModeId()` as a
+  shape check (`/^[a-z0-9][a-z0-9_-]{0,63}$/`) for custom presets. Host and client now use
+  the shape check for reading the default and for availability, so a custom preset used as
+  the new-task default is **read correctly** (it used to say "default unread; using
+  built-in PTC", i.e. treating your choice as no choice). Table columns = baseline four +
+  roster extras, with a layered swap: a missing built-in column keeps the whole old table,
+  a missing custom column costs only that one. Judging ids now come from the roster, so a
+  built-in you deleted is no longer recommended (0.2.1 recommended it, `select()` then
+  failed, and the user got a button that would not move).
+  (2) **Feedback loop**: 👍 / 👎 under the verdict, written to
+  `$DSH_PROFILE_DIR/npie-modeguide/feedback.jsonl`, rolling at 5 MB, **no network**. Only
+  whitelisted fields (input truncated 900 → 500, forged `at` ignored, extras dropped), and
+  both buttons lock after one press. Without a profile directory the host returns
+  `no-storage` and the UI says "not recorded". `npm run stats` prints adoption (`null`, not
+  0%, when empty), a per-mode / per-source split, and the wrong inputs ready to paste into
+  the case set; malformed lines are counted. The route returns 405 on `GET` and 400 on a
+  bad `thumb` without writing anything.
+  (3) **Local stats**: collapsed at the bottom of the panel, **fetched only when
+  expanded**. The client tracks `judged/rules/llm/default` per source — **subtracting
+  before adding** on a source change, otherwise the three cells exceed the total and the
+  numbers lie to the user. The host tracks judge / model / cacheHit / limited / modelMs /
+  feedbackUp / Down, and `avgModelMs` **covers only requests actually sent** (folding in
+  429s and cache hits would look good and be wrong), `null` when there are none.
+  (4) **Accessibility**: a real dialog — `aria-modal` + `role="dialog"` + `tabIndex: -1`,
+  Tab / Shift+Tab cycling inside the panel, and `Esc` or × returning focus to the trigger
+  (it used to drop to `body`); feedback buttons use `aria-pressed`. With a reverse control
+  that fails when the Tab loop is removed.
+  (5) **Polling 4s → 12s**: the 4s period only helped someone staring at the settings
+  page, while changing the default necessarily involves switching windows, where the
+  immediate path already reads it. All three immediate paths are intact, and the guard
+  pins the 10–15s band plus a separate check that the immediate paths still exist.
+  (6) **English weak cues filled in**: 0.2.1 added English **named** phrasings but the
+  `weak` tier was Chinese-only, so `add a button to the toolbar` or `aggregate the logs in
+  these folders` produced no signal at all. Each mode gained ≥4 ASCII weak terms (cordis:
+  `skin/extension/addon/layout/toolbar/menu`; ptc: `folder/directory/dataset/...`), and the
+  guard runs the behaviour (really judging those three sentences) rather than grepping the
+  list.
+  (7) **`tsc --checkJs` in CI (non-blocking)**: `tsconfig.check.json` covers the host half
+  and `scripts/`, excluding `adapter.js` (heavy dynamic properties; full inference only
+  forces a pile of `any`). Of 17 first-round reports, 4 were real: `refund` missing from
+  the token bucket's `@returns`, `hits` declared `string[]` while receiving a frozen array,
+  an unannotated `str()` parameter, and an `unknown` `body.source`.
+  (8) 109 guards / 133 eval assertions (86 cases) green; three docs statements that no
+  longer matched the implementation were corrected (the 4-second period, "custom presets
+  are not included", and "judging ids come from baseline columns").
 - **0.2.1** (2026-11-16): **blind-tested on 50 real phrasings over two rounds; ten wrong
   verdicts fixed.** The 0.2.0 case set was written by the same hand as the rules, so 100%
   only proved self-consistency. This version hunted the dangerous class — a wrong verdict

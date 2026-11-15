@@ -692,13 +692,33 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
       setTimeout: options.fastTimers ? (fn, ms) => setTimeout(fn, Math.min(ms, 5)) : setTimeout,
       clearTimeout,
       fetch: async (url, init) => {
-        fetches.push([url, init && init.method])
+        fetches.push([url, init && init.method, init && init.body])
         // /config 模拟宿主下发的真实默认：内置 ptc，可改成用户在设置页选的别的模式。
         const config = {
           llmFallback: options.llmFallback === true,
           defaultMode: options.noHostDefault ? null : (options.hostDefaultMode || 'ptc'),
         }
         if (url === '/api/npie-modeguide/config') return { ok: true, status: 200, json: async () => config }
+        // /feedback：默认「真记上了」；feedbackOk:false 用来验「没记上就不许说记上了」。
+        if (url === '/api/npie-modeguide/feedback') {
+          const stored = options.feedbackOk !== false
+          return {
+            ok: true,
+            status: 200,
+            json: async () => (stored ? { ok: true, stored: true } : { ok: false, error: 'no-storage' }),
+          }
+        }
+        // /stats：宿主计数器。
+        if (url === '/api/npie-modeguide/stats') {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              ok: true,
+              stats: { model: 3, cacheHit: 2, limited: 1, avgModelMs: 420, feedbackUp: 4, feedbackDown: 2 },
+            }),
+          }
+        }
         // /judge 默认回空对象（＝模型没给结论）；配额场景显式给状态码与 body。
         const judge = options.judgeResponse
         if (judge) {
@@ -913,21 +933,21 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
   // 结论与能力表都必须当场出现，界面上一句「读不到」都不许有。
   const stalled = await renderWith(true, { stallRead: true, fastTimers: true })
   assert.ok(containsText(stalled, '创造模式'), 'Remote 挂起时本地结论仍必须出现')
-  assert.ok(containsText(stalled, '查看四个模式的差异'), 'Remote 挂起时能力表仍必须出现')
+  assert.ok(containsText(stalled, '查看模式之间的差异'), 'Remote 挂起时能力表仍必须出现')
   assert.ok(!containsText(stalled, '预设暂时读不到'), '不许再向用户报告这条无关的错误')
   assert.ok(!containsText(stalled, '判断中…'), '不许把用户锁在等待里')
 
   // list() 永久挂起（宿主的另一个真实故障）同样不该影响界面。
   const stalledList = await renderWith(true, { stallList: true })
   assert.ok(!containsText(stalledList, '预设暂时读不到'), 'list() 挂住不许影响能力表')
-  assert.ok(containsText(stalledList, '查看四个模式的差异'), '四个预设都读到了，能力表必须出现')
+  assert.ok(containsText(stalledList, '查看模式之间的差异'), '四个预设都读到了，能力表必须出现')
 
   // 反向对照：把产物里的能力基线换成空表，能力表必须消失。
   // 没有这条，上面几条可能只是「按钮永远都在」的恒真式。
   const broken = built.replace(/^    const PRESET_BASELINE = .*$/m, '    const PRESET_BASELINE = {"columns":[],"rows":[]};')
   assert.ok(broken !== built, '反向对照必须真的替换到产物里的基线常量')
   const noBaseline = await renderWith(true, { breakBaseline: true, stallRead: true, fastTimers: true })
-  assert.ok(!containsText(noBaseline, '查看四个模式的差异'), '基线清空后能力表必须消失')
+  assert.ok(!containsText(noBaseline, '查看模式之间的差异'), '基线清空后能力表必须消失')
 
   // 两句理由必须真画在结论区；退回旧的短 reason 就得翻红（存在性 ≠ 有效性）。
   const whyTree = await renderWith(true)
@@ -950,6 +970,38 @@ test('真渲染：空白会话出一键应用按钮，已开始会话只给说�
   })
   assert.ok(conflict.__fetches.filter(([, method]) => method === 'POST').length > 0,
     '信号冲突必须真的问模型')
+
+  // 反馈闭环：按钮要真发出一条记录，且只有宿主说记上了才敢说「已记在本机」。
+  const fbTree = await renderWith(true, { draft: '我想写一首诗', expectedMode: 'PTC 模式' })
+  const downBtn = findButton(fbTree, '判错了')
+  assert.ok(downBtn, '有结论就必须有反馈入口')
+  assert.equal(downBtn.props['aria-pressed'], 'false', '没点之前不许是按下态')
+  downBtn.props.onClick()
+  await settle()
+  const fbPost = fbTree.__fetches.find(([url, method, body]) => url === '/api/npie-modeguide/feedback' && method === 'POST' && body)
+  assert.ok(fbPost, '点「判错了」必须真发一条记录')
+  const fbBody = JSON.parse(fbPost[2])
+  assert.equal(fbBody.thumb, 'down')
+  assert.equal(fbBody.mode, 'ptc')
+  assert.equal(fbBody.source, 'default')
+  assert.equal(fbBody.defaultMode, 'ptc', '要记下当时的默认，否则事后无法复原判断前提')
+  assert.ok(!('at' in fbBody), '时间由宿主写，客户端不许自己造一个')
+  assert.ok(containsText(fbTree.__latest(), '已记在本机'), '记上了要明说')
+
+  // 反向对照：宿主回「没记上」（没有 profile 目录就是这种），界面不许说记上了。
+  const fbFail = await renderWith(true, { draft: '我想写一首诗', expectedMode: 'PTC 模式', feedbackOk: false })
+  findButton(fbFail, '判错了').props.onClick()
+  await settle()
+  assert.ok(containsText(fbFail.__latest(), '没记上'), '写盘失败必须说出来')
+  assert.ok(!containsText(fbFail.__latest(), '已记在本机'), '写盘失败不许谎报成功')
+
+  // 本机统计：默认收起；展开才去宿主取一次，取到的数字照实画。
+  assert.ok(!containsText(fbTree, '模型调用'), '统计默认收起，不占地方')
+  findButton(fbTree, '本机统计').props.onClick()
+  await settle()
+  assert.ok(fbTree.__fetches.some(([url]) => url === '/api/npie-modeguide/stats'), '展开时才去宿主取')
+  assert.ok(containsText(fbTree.__latest(), '模型调用'), '展开后要有宿主计数')
+  assert.ok(containsText(fbTree.__latest(), '420ms'), '平均耗时照实画，不编')
 
   // 配额用光：界面要说清「还要等多久」，而不是笼统说「模型没回应」。
   const limited = await renderWith(true, {
@@ -1009,13 +1061,91 @@ test('能力表以基线为准，实时读取只做后台校正，失败完全�
   assert.match(fn, /presets\.read\(id\)/, '实时校正走 read() 直读')
   assert.match(fn, /withTimeout\(presets\.read\(id\), READ_TIMEOUT_MS, null\)/, '每个 read 都带独立超时')
   assert.match(fn, /Promise\.all\(/, '四个模式并行读')
-  assert.match(fn, /usable\.length === ids\.length \? buildMatrix\(usable\) : null/, '缺一列宁可保留完整基线')
+  // 新契约（0.2.2）：内置四列必须全读到才换表，自定义预设是**加分项**，
+  // 读不到就少一列，不影响内置结论（缺列会把「不知道」画成「没有」）。
+  assert.match(fn, /!baselineIds\.every\(\(id\) => byId\.has\(id\)\)\) return null/, '缺一列宁可保留完整基线')
+  assert.match(fn, /readRoster\(ctx\)/, '列要来自 roster，否则自定义预设根本不会出现在表里')
+  assert.match(fn, /extraIds/, 'roster 里多出来的预设要追加成新列')
   assert.ok(!/error:/.test(fn), 'refineMatrix 不许再产出任何错误态')
 
   const judge = adapter.slice(adapter.indexOf('const runJudge = async () =>'), adapter.indexOf('// 应用：只在空白会话出现'))
   assert.match(judge, /matrix: baseline/, '第一次 setState 就把基线画出来')
   assert.ok(!/presetTimeout|presetErrorPrefix|busyPresets/.test(judge), '不许再渲染「预设读不到」或核对状态')
   assert.match(judge, /withTimeout\(refineMatrix\(props\.ctx\), PRESET_TIMEOUT_MS, null\)\.then\(/, '实时校正在后台，失败返回 null 不打扰用户')
+})
+
+/** 在 vm 里加载真实产物，拿到 adapter 导出的纯函数 —— 与真机同一份代码。 */
+function loadClient() {
+  let factory = null
+  const sandbox = {
+    window: { __ModuleLoader__: { load: (spec) => { factory = spec.factory } } },
+    document: {
+      createElement: () => ({ setAttribute() {}, remove() {}, set textContent(v) {} }),
+      head: { appendChild() {} },
+      body: {},
+    },
+    navigator: { language: 'zh-CN' },
+    console,
+    setTimeout,
+    clearTimeout,
+    fetch: async () => ({ ok: true, status: 200, json: async () => ({}) }),
+  }
+  vm.runInNewContext(readText('client.js'), sandbox)
+  const react = {
+    createElement: () => null,
+    useState: () => [null, () => {}],
+    useEffect() {},
+    useRef: () => ({ current: null }),
+  }
+  return factory((name) => (name === 'react' ? react : { createPortal: (node) => node }))
+}
+
+test('任意预设：能力表多出自定义预设那一列，内置缺列时才放弃换表', async () => {
+  const list = async () => ({
+    ok: true,
+    value: {
+      presets: [
+        { id: 'standard' }, { id: 'ptc', isDefault: true }, { id: 'minimal' }, { id: 'cordis' },
+        { id: 'doc-writer', name: '文档模式' },
+      ],
+    },
+  })
+  const read = async (id) => ({
+    ok: true,
+    value: {
+      content: fixture(id === 'doc-writer' ? 'standard' : id),
+      name: id === 'doc-writer' ? '文档模式' : id,
+    },
+  })
+  const ctx = { remote: { agentPresets: { list, read } } }
+
+  const mod = loadClient()
+  const matrix = await mod.refineMatrix(ctx)
+  assert.ok(matrix, '内置四列都读到了就必须换表')
+  assert.equal(matrix.columns.length, 5, '自定义预设要有自己的一列')
+  assert.equal(matrix.columns[4].id, 'doc-writer')
+  assert.equal(matrix.columns[4].name, '文档模式', '列名用预设自带的名字')
+  // vm 里的数组属于另一个 realm，deepEqual 会因原型不同而假红 —— 比字符串。
+  assert.equal(
+    matrix.columns.slice(0, 4).map((c) => c.id).join(','),
+    BASELINE_MATRIX.columns.map((c) => c.id).join(','),
+    '内置四列的顺序不许被自定义预设打乱',
+  )
+  // 词典里没有的 id 回落到预设自带名，而不是把原始 id 甩给用户。
+  assert.equal(mod.modeLabel('doc-writer', (key) => key, matrix), '文档模式')
+  assert.equal(mod.modeLabel('standard', (key) => key, matrix), 'standard', '没有词典时退回 id，但不抛错')
+
+  // 反向对照 1：内置某一列读不到 ⇒ 一列都不换。
+  const lostBuiltin = await loadClient().refineMatrix({
+    remote: { agentPresets: { list, read: async (id) => (id === 'minimal' ? { ok: true, value: null } : read(id)) } },
+  })
+  assert.equal(lostBuiltin, null, '内置缺一列时必须保留基线')
+
+  // 反向对照 2：自定义预设读不到 ⇒ 只少那一列，内置四列照常换。
+  const lostCustom = await loadClient().refineMatrix({
+    remote: { agentPresets: { list, read: async (id) => (id === 'doc-writer' ? { ok: true, value: null } : read(id)) } },
+  })
+  assert.equal(lostCustom.columns.length, 4, '自定义预设读不到只少一列，不许连内置一起放弃')
 })
 
 /** 在树里按 id 找节点。 */
@@ -1835,8 +1965,15 @@ test('宿主现读 selectedDefault，不缓存、不猜、读不到返回 null',
   assert.equal(readDefaultMode(ctx, null), 'minimal', '不许缓存：改完下一次读就是新值')
   registry._selected = null
   assert.equal(readDefaultMode(ctx, null), 'ptc', '没选中时回落到部署默认')
-  registry._selected = 'not-a-preset'
-  assert.equal(readDefaultMode(ctx, null), null, '不在四个内置预设里就不猜')
+  // 0.2.2 放宽：用户自定义的预设也是他自己的选择，插件不许用自己的白名单否掉它。
+  registry._selected = 'doc-writer'
+  assert.equal(readDefaultMode(ctx, null), 'doc-writer', '自定义预设的默认必须读得出来')
+  // 但形状不像 id 的串一律不认：它最终会进 select() 和提示词。
+  // （null 不在这一列里：registry 的 getter 会回落到部署默认 ptc，那是正确行为。）
+  for (const bad of ['', 'not a preset', 'NotAPreset!', 'x'.repeat(80), 42]) {
+    registry._selected = bad
+    assert.equal(readDefaultMode(ctx, null), null, `「${String(bad)}」不是合法 id，不许采用`)
+  }
   assert.equal(readDefaultMode({ reflect: { get: () => { throw new Error('without inject') } } }, null), null,
     'reflect 抛错时降级，不许把宿主内部异常糊给用户')
   assert.equal(readDefaultMode({}, null), null, '两处都拿不到时诚实标成未读到')
@@ -1862,8 +1999,11 @@ test('profile patch 兜底：只读宿主已持久化的 selectedDefault，不�
     '没选中时回落到部署默认')
   assert.equal(parseDefaultFromPatch(patch.replace('agent-preset-registry', 'some-other-row')), null,
     '找不到 registry 行就返回 null')
-  assert.equal(parseDefaultFromPatch(patch.replace('standard', 'not-a-preset')), null,
-    '不在四个内置预设里就不猜')
+  // 自定义预设同样认（形状合法），而形状不像 id 的串不认。
+  assert.equal(parseDefaultFromPatch(patch.replace('selectedDefault: standard', 'selectedDefault: doc-writer')), 'doc-writer',
+    '用户在设置里自建的预设也要读得出来')
+  assert.equal(parseDefaultFromPatch(patch.replace('selectedDefault: standard', 'selectedDefault: NotAPreset!')), null,
+    '形状不像 id 的值不许采用（含大写与符号）')
   assert.equal(parseDefaultFromPatch(''), null, '空文件不许抛')
   // 运行时 service 缺席时，仍能从 profile 文件读到用户选的默认。
   const { writeFileSync, mkdtempSync } = await import('node:fs')
@@ -2108,6 +2248,210 @@ test('缓存 key 必须带默认模式：改了默认，同一句不许复用旧
     if (prev === undefined) delete process.env.DSH_PROFILE_DIR
     else process.env.DSH_PROFILE_DIR = prev
   }
+})
+
+test('反馈闭环：只收白名单字段、只写本机、写不进去不谎报', async () => {
+  const { normalizeFeedback, appendFeedback } = await import('../index.js')
+  const record = normalizeFeedback({
+    thumb: 'down',
+    input: 'x'.repeat(900),
+    mode: 'ptc',
+    source: 'rules',
+    signal: 'strong',
+    defaultMode: 'standard',
+    lang: 'en',
+    恶意字段: '不该进文件',
+    at: '伪造时间',
+  }, () => '2026-11-16T00:00:00.000Z')
+
+  assert.equal(record.thumb, 'down')
+  assert.equal(record.input.length, 500, '原文截到 500 字：要给规则改进留样本，但不留整段隐私')
+  assert.equal(record.lang, 'en')
+  assert.equal(record.at, '2026-11-16T00:00:00.000Z', '时间由宿主写，不采信请求体')
+  assert.ok(!('恶意字段' in record), '请求体里的额外字段一律丢弃')
+  assert.equal(typeof record.ruleVersion, 'string', '要记下这条反馈出自哪套规则')
+  // 反向对照：thumb 不是 up/down 就整条拒绝，不许默认成「判对了」。
+  assert.equal(normalizeFeedback({ thumb: 'maybe' }), null)
+  assert.equal(normalizeFeedback(null), null)
+  assert.equal(normalizeFeedback({}), null)
+
+  // 没有 profile 目录时不许假装记上了。
+  assert.equal(appendFeedback(record, undefined).error, 'no-storage')
+})
+
+test('反馈 e2e：点一次写一条 JSONL，/stats 与 npm run stats 都读得出来', async () => {
+  const { apply, FEEDBACK_PATH, STATS_PATH, JUDGE_PATH } = await import('../index.js')
+  const { summarize, parseJsonl } = await import('../scripts/stats.mjs')
+  const { mkdtempSync, readFileSync, existsSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+
+  const routes = {}
+  let streams = 0
+  const reply = JSON.stringify({ mode: 'ptc', reason: '批量处理', confidence: 0.8 })
+  const webCtx = {
+    effect: (fn) => { fn() },
+    webServer: { register: (spec) => { routes[spec.path] = spec.handler; return () => {} } },
+    reflect: {
+      get: (name) => {
+        if (name === 'connection') return { requestRejection: () => undefined }
+        // llm 与默认模型是「平均耗时有据可依」的前提：没有它，下面那条断言只能在
+        // 0 与 null 之间挑一个，证明不了统计真的在数发出去的请求。
+        if (name === 'llm') {
+          return { stream: async function* () { streams += 1; yield { type: 'text-delta', text: reply } } }
+        }
+        if (name === 'agentDefaultModel') return { currentSelection: () => ({ provider: 'p', model: 'm' }) }
+        if (name === 'agentPresets') return { defaultId: 'ptc' }
+        return undefined
+      },
+    },
+  }
+  const call = async (path, method, payload) => {
+    const req = new EventEmitter()
+    req.method = method
+    req.headers = {}
+    const res = {
+      writeHead(code, headers) { this.code = code; this.headers = headers; return this },
+      end(body) { this.body = body; return this },
+    }
+    const pending = routes[path](req, res)
+    if (payload !== undefined) req.emit('data', Buffer.from(JSON.stringify(payload)))
+    req.emit('end')
+    await pending
+    return res
+  }
+
+  // 每个用例自己的临时 profile：不碰用户真实的 ~/.dsh。
+  const dir = mkdtempSync(join(tmpdir(), `npie-mg-fb-${process.pid}-`))
+  const prev = process.env.DSH_PROFILE_DIR
+  process.env.DSH_PROFILE_DIR = dir
+  try {
+    apply({ inject: (_names, cb) => cb(webCtx) }, {})
+    const up = await call(FEEDBACK_PATH, 'POST', { thumb: 'up', input: '把标题层级统一一下', mode: 'ptc', source: 'rules', signal: 'strong' })
+    const down = await call(FEEDBACK_PATH, 'POST', { thumb: 'down', input: '遍历一下这个 JSON', mode: 'standard', source: 'llm' })
+    assert.equal(JSON.parse(up.body).stored, true)
+    assert.equal(JSON.parse(down.body).stored, true)
+
+    const file = join(dir, 'npie-modeguide', 'feedback.jsonl')
+    assert.ok(existsSync(file), '反馈必须真落盘')
+    const lines = readFileSync(file, 'utf8').trim().split('\n')
+    assert.equal(lines.length, 2, '点两次就是两条记录')
+
+    const { records, badLines } = parseJsonl(readFileSync(file, 'utf8'))
+    assert.equal(badLines, 0)
+    const summary = summarize(records)
+    assert.equal(summary.total, 2)
+    assert.equal(summary.adoption, 50, '一正一负 = 50%')
+    assert.equal(summary.bySource.rules.up, 1)
+    assert.equal(summary.bySource.llm.down, 1)
+    assert.equal(summary.wrong.length, 1, '错例要能被挑出来补进评测集')
+
+    // /stats 的反馈计数只算真的写进去的。
+    const stats = JSON.parse((await call(STATS_PATH, 'GET')).body)
+    assert.equal(stats.stats.feedbackUp, 1)
+    assert.equal(stats.stats.feedbackDown, 1)
+    // 一条模型请求都没发过时，平均耗时必须是 null。写成 0 会被读成「问过、而且很快」，
+    // 把「没有数据」画成一个看起来正常的值 —— 这正是本版反复修的那类谎报。
+    assert.equal(stats.stats.model, 0)
+    assert.equal(stats.stats.avgModelMs, null, '零请求不许把「没有数据」画成 0ms')
+    // 反向对照：真问一次模型后它必须变成数字，否则上面那条断言等于恒真式
+    // （任何实现都不满足「有数字」以外的分支时也能绿）。
+    await call(JUDGE_PATH, 'POST', { input: '用工作流批量处理这批文件', matrix: BASELINE_MATRIX })
+    assert.equal(streams, 1, '冲突输入应当真的问一次模型')
+    const after = JSON.parse((await call(STATS_PATH, 'GET')).body)
+    assert.equal(after.stats.model, 1, '发出去的请求要被数进去')
+    assert.equal(typeof after.stats.avgModelMs, 'number', '有请求后平均耗时才成立')
+
+    // 反向对照 1：非法 thumb → 400，且文件不长新行。
+    const bad = await call(FEEDBACK_PATH, 'POST', { thumb: 'maybe', input: 'x' })
+    assert.equal(bad.code, 400)
+    assert.equal(readFileSync(file, 'utf8').trim().split('\n').length, 2, '坏请求不许落盘')
+
+    // 反向对照 2：GET 反馈路由必须 405（它只接受 POST）。
+    assert.equal((await call(FEEDBACK_PATH, 'GET')).code, 405)
+  } finally {
+    if (prev === undefined) delete process.env.DSH_PROFILE_DIR
+    else process.env.DSH_PROFILE_DIR = prev
+    try {
+      const { rmSync } = await import('node:fs')
+      rmSync(dir, { recursive: true, force: true })
+    } catch {
+      // 清理失败不影响判据（安全中心可能拦删除）
+    }
+  }
+})
+
+test('stats 口径：没有记录时采纳率是未知而不是 0，坏行要报出来', async () => {
+  const { summarize, parseJsonl } = await import('../scripts/stats.mjs')
+  assert.equal(summarize([]).adoption, null, '没有记录就别说 0%：那会被读成「全判错」')
+  assert.equal(summarize([]).total, 0)
+  const parsed = parseJsonl('{"thumb":"up"}\n\n不是 JSON\n{"thumb":"down"}')
+  assert.equal(parsed.records.length, 2, '坏行要跳过，好行照收')
+  assert.equal(parsed.badLines, 1, '坏了几行必须能说出来')
+  assert.equal(summarize(parsed.records, { badLines: parsed.badLines }).badLines, 1)
+})
+
+test('浮层可访问性：aria-modal 声明了就必须真把 Tab 关在里面', () => {
+  const src = readText('adapter.js')
+  assert.match(src, /'aria-modal': 'true'/, '对话框必须声明 aria-modal')
+  assert.match(src, /tabIndex: -1/, '浮层自身要能接收焦点，否则 Tab 环没有落点')
+  const keyBlock = src.slice(src.indexOf('const onKey = (event) =>'), src.indexOf('const onDown = (event) =>'))
+  assert.ok(keyBlock.length > 0, '必须能定位到键盘处理函数')
+  assert.match(keyBlock, /event\.key !== 'Tab'/, '必须拦 Tab，不能只写 aria-modal')
+  assert.match(keyBlock, /focusablesIn\(popRef\.current\)/, '焦点环要取浮层内的可聚焦元素')
+  assert.match(keyBlock, /closeAndRestore\(\)/, 'Esc 关闭要把焦点还给触发按钮')
+  // 反向对照：Esc 一旦退回裸 close()，焦点就留在被卸载的浮层里。
+  assert.ok(!/Escape'\) \{\s*\n\s*event\.stopPropagation\(\)\s*\n\s*close\(\)/.test(keyBlock),
+    'Esc 不许退化成不还焦点的 close()')
+  assert.match(src, /onClick: closeAndRestore \}/, '× 按钮同样要还焦点')
+  // 初始焦点：打开就聚焦输入框（原有行为，别在这一轮改动里被删掉）。
+  assert.match(src, /if \(el && typeof el\.focus === 'function'\) el\.focus\(\)/, '打开即聚焦输入框')
+})
+
+test('英文弱线索：四个模式都要有，且弱线索仍只算半条', () => {
+  // 行为层：英文句子既能靠组合判据定案，也能靠「部分证据 + 弱线索」凑够。
+  assert.equal(recommendByRules('add a button to the toolbar').mode, 'cordis')
+  assert.equal(recommendByRules('aggregate the logs in these folders').mode, 'ptc')
+  assert.equal(recommendByRules('run a clean baseline with a controlled experiment').mode, 'minimal')
+  // 反向对照：只有一条弱线索时必须沉默（否则弱线索就等于定案）。
+  assert.notEqual(recommendByRules('change one line and reproduce the bug').kind, 'decided')
+
+  // 配置层：每一档 weak 至少 4 条 ASCII 词，防止以后只加中文。
+  const src = readText('src/recommender.js')
+  for (const id of ['cordis', 'standard', 'minimal', 'ptc']) {
+    const start = src.indexOf(`id: '${id}'`)
+    assert.ok(start > 0, `找不到 ${id} 规则块`)
+    const block = src.slice(start, src.indexOf('\n  },', start))
+    const weakStart = block.indexOf('weak: [')
+    const weak = block.slice(weakStart, block.indexOf(']', weakStart))
+    const ascii = (weak.match(/'[a-z][a-z -]{3,}'/g) || []).length
+    assert.ok(ascii >= 4, `${id} 的英文弱线索只有 ${ascii} 条，界面双语而规则单语`)
+  }
+})
+
+test('轮询间隔落在 10–15 秒：报告 H8 的口径，不能悄悄退回 4 秒', () => {
+  const src = readText('adapter.js')
+  const match = /const DEFAULT_MODE_POLL_MS = (\d+)/.exec(src)
+  assert.ok(match, '找不到轮询间隔常量')
+  const ms = Number(match[1])
+  assert.ok(ms >= 10000 && ms <= 15000, `轮询间隔 ${ms}ms 超出 10–15 秒区间`)
+  // 即时路径必须还在：否则 12 秒的滞后就真的被用户看到了。
+  assert.match(src, /window\.addEventListener\('focus', wake\)/, '窗口回焦要立即复查')
+  assert.match(src, /document\.addEventListener\('visibilitychange', wake\)/, '切回标签页要立即复查')
+})
+
+test('类型体检接上了：tsconfig + npm run typecheck + CI 非阻断', () => {
+  const pkg = JSON.parse(readText('package.json'))
+  assert.match(pkg.scripts.typecheck, /tsc -p tsconfig\.check\.json/, '缺 typecheck 脚本')
+  const tsconfig = JSON.parse(readText('tsconfig.check.json'))
+  assert.equal(tsconfig.compilerOptions.checkJs, true, '不开 checkJs 就只是语法检查')
+  assert.equal(tsconfig.compilerOptions.noEmit, true, '体检不许产出文件')
+  // adapter.js 刻意不在范围内：它只有 React 工厂函数与 DOM，没有类型定义可依，
+  // 放进来的报错 100% 是噪音（会把真问题淹掉）。这个决定要写在配置里，见 exclude。
+  assert.ok(tsconfig.exclude.includes('adapter.js'), 'adapter.js 的排除必须显式写出来')
+  const ci = readText('.github/workflows/check.yml')
+  assert.match(ci, /npm run typecheck/, 'CI 要真的跑一次')
+  assert.match(ci, /continue-on-error: true/, '报告要求先只报错不阻断')
+  assert.ok(pkg.files.includes('tsconfig.check.json'), '打包时要带上它，否则装完 typecheck 跑不起来')
 })
 
 test('预设白名单只有一份：宿主 import，客户端内联，且与能力表列一致', () => {

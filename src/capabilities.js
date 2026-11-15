@@ -247,6 +247,7 @@ export function analyzePreset(content, platform = 'darwin') {
     }
   })
 
+  /** @type {Record<string, boolean | 'conditional'>} */
   const capabilities = {}
   const unknown = []
   for (const cap of CAPABILITIES) {

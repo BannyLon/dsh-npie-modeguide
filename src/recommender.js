@@ -109,7 +109,10 @@ export const MODE_RULES = Object.freeze([
     // 「插件」单独出现就足以说明要碰 DSH 本体 —— 但必须先排除排错语境（见 REVERSE_RULES）。
     strong: ['插件', 'plugin'],
     support: ['cordis', 'mcp', 'hook', '预设', 'preset', 'skill', '技能', '面板', 'panel', 'sidebar', '侧栏'],
-    weak: ['按钮', 'button', '组件', 'component', 'widget', '图标', 'icon', '主题', 'theme', '皮肤'],
+    // 英文弱线索补齐：界面早就双语，规则若只有中文，一半用户拿到的是空功能。
+    // 弱线索只算半条，加词的风险远小于 strong —— 但要避免和别的模式撞词。
+    weak: ['按钮', 'button', '组件', 'component', 'widget', '图标', 'icon', '主题', 'theme',
+      '皮肤', 'skin', 'extension', 'addon', 'layout', 'toolbar', 'menu'],
     reason: '要写插件 / 改预设 / 加界面 —— 只有创造模式带改 DSH 本体的工具',
   },
   {
@@ -123,7 +126,10 @@ export const MODE_RULES = Object.freeze([
     ],
     strong: ['工作流编排', '扇出', 'workflow orchestration'],
     support: ['工作流', 'workflow', '编排', '多阶段', '多代理', 'multi-agent', 'orchestrate'],
-    weak: ['流程化', '流水线', 'coordinator', 'pipeline', '阶段', '子代理', 'subagent'],
+    // 注意别同时收 'stage' 与 'stages'：整词匹配允许复数，"stages" 会命中两次，
+    // 等于白送半条证据。
+    weak: ['流程化', '流水线', 'coordinator', 'pipeline', '阶段', '子代理', 'subagent',
+      'multi-step', 'stage', 'agent chain'],
     reason: '要 workflow 大扇出编排 —— PTC 模式关掉了工作流工具，只有标准和创造有',
   },
   {
@@ -140,7 +146,8 @@ export const MODE_RULES = Object.freeze([
     // 「对照实验」是决定性的：极简模式唯一的存在理由就是干净对照，别的模式做不了。
     strong: ['基线对照', '控制变量', '对照实验'],
     support: ['基线', '基准', '对照组', '对比测试', 'benchmark', 'baseline', 'repro', 'minimal', '对照实验'],
-    weak: ['对照', '对比', '复现', '实验', '一行改动', '只改一处'],
+    weak: ['对照', '对比', '复现', '实验', '一行改动', '只改一处',
+      'control', 'controlled', 'experiment', 'reproduce', 'single change', 'one-line change'],
     reason: '要做纯净基线对照 —— 极简模式刻意砍到只剩终端与图片读取，没有工具干扰',
   },
   {
@@ -166,7 +173,8 @@ export const MODE_RULES = Object.freeze([
     // 统计(1) + log + 目录下（两条弱线索 = 1）凑成定案 —— 和「统计表格行数」
     // 是同一个错误，只是换了一组词。
     weak: ['csv', 'excel', '表格', '日志', 'log', '数据', '正则', 'regex', '目录下', '整理',
-      '统计', '格式', 'spreadsheet', 'table', '文件'],
+      '统计', '格式', 'spreadsheet', 'table', '文件',
+      'folder', 'directory', 'dataset', 'records', 'rows'],
     reason: '要遍历 / 批量处理 —— execute 代码执行器可以一次调完所有工具，只回结果，省上下文',
   },
 ])
@@ -328,7 +336,7 @@ function isNegated(text, index) {
 /**
  * 统计一段文本里命中的关键词，忽略被否定的那次出现。
  * @param {string} text - 已归一的小写文本。
- * @param {string[]} words
+ * @param {readonly string[]} words - 允许传入冻结的规则表（PRESET_IDS 那种）。
  * @returns {string[]} 命中的词。
  */
 function hits(text, words) {
@@ -630,7 +638,8 @@ export const MAX_MATRIX_ROWS = 40
  * @returns {{columns: Array<{id: string, name: string}>, rows: Array<{id: string, label: string, hint: string, cells: object}>}}
  */
 export function sanitizeMatrix(raw) {
-  const source = raw && typeof raw === 'object' ? raw : {}
+  // 请求体来源不可信：先当成「可能什么都没有的对象」，再逐字段校验。
+  const source = /** @type {Record<string, unknown>} */ (raw && typeof raw === 'object' ? raw : {})
   const columns = (Array.isArray(source.columns) ? source.columns : [])
     .filter((c) => c && typeof c === 'object' && typeof c.id === 'string' && c.id)
     .slice(0, 8)
