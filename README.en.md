@@ -131,6 +131,15 @@ phrasings (error, not working, why, fix, debug) push straight back to the defaul
 **skip the model entirely**. The word "plugin" in "my plugin stopped working" is a strong
 signal, but that sentence asks for debugging, not for writing a plugin.
 
+One gate runs even earlier: **"you are asking about the modes themselves"** (difference /
+which is better / which should I use / how do I choose). Such sentences almost always
+contain the literal "PTC mode", and pinning decides on a literal hit — without the gate,
+"compare the difference between Standard and PTC" is read as "I want PTC".
+
+Two more phrasings belong to this layer: **explaining** (how does it work / explain this)
+and **uninstalling**. The first wants knowledge, not throughput; the second is an
+operation in the host's settings page. Neither is a task that needs an exclusive tool.
+
 Negation works in English too (`don't use workflow`, including the curly `don’t`), and
 anything shorter than 4 characters counts as too little information.
 
@@ -177,7 +186,7 @@ adjective here, it is a command you can run:
 
 ```bash
 npm run eval
-# [eval] 119/119 passed (100%), 77 cases · main 94/94 · heldout 25/25
+# [eval] 133/133 passed (100%), 86 cases · main 108/108 · heldout 25/25
 ```
 
 - Cases live in `test/eval/cases.json` (the set used while tuning) and
@@ -446,22 +455,33 @@ Known limitations, stated honestly (not yet changed):
 
 ## Changelog
 
-- **0.2.1** (2026-11-16): **blind-tested on 20 real phrasings, four wrong verdicts
-  fixed.** The 0.2.0 case set was written by the same hand as the rules, so 100% only
-  proved self-consistency; this version re-checked against deliberately awkward wording
-  and hit exactly the dangerous class — a wrong verdict whose reason still reads like a
-  fact. (1) "traverse" is downgraded from a decisive feature to a composite rule: walking
-  a JSON object or an array is ordinary programming that Standard's bash already does;
-  only "traverse + directory / all files" is an `execute` case ("walk this JSON to see
-  its shape" used to be judged PTC). (2) A "you are asking about the modes themselves"
-  gate now runs **before** pinning — "compare the difference between Standard and PTC"
-  contains the literal "PTC mode" and used to be read as "I want PTC". (3) The reverse
-  list gains "won't open / crashes / won't install / broken / explain this" ("my plugin
-  worked yesterday and won't open today" used to be judged Creative). (4) Prompt and rule
+- **0.2.1** (2026-11-16): **blind-tested on 50 real phrasings over two rounds; ten wrong
+  verdicts fixed.** The 0.2.0 case set was written by the same hand as the rules, so 100%
+  only proved self-consistency. This version hunted the dangerous class — a wrong verdict
+  whose reason still reads like a fact. (1) "traverse" is downgraded from a decisive
+  feature to a composite rule: walking a JSON object or an array is ordinary programming
+  that Standard's bash already does; only "traverse + directory / all files" is an
+  `execute` case. (2) A "you are asking about the modes themselves" gate runs **before**
+  pinning — "compare Standard and PTC" contains the literal "PTC" and used to be read as
+  "I want PTC". (3) The reverse list gains "won't open / crashes / won't install / broken
+  / explain this / how does it work / uninstalled", fixing "my plugin worked yesterday and
+  won't open today → Creative" and "explain how the cordis plugin loads → Creative":
+  explaining and uninstalling are not tasks that need a mode. (4) "count" drops from
+  partial evidence to a weak hint — `grep -c` already does it, and "find every .log in
+  this directory and count them" used to be decided by count + log + directory, the same
+  mistake as "count the rows of this table" in different words. (5) The composite rule's
+  verb list gains "make / swap / set / adjust / hide / collapse" — "I want the sidebar
+  collapsed by default" and "give this button another colour" only reached hint level
+  before, yet editing the UI is Creative-only. (6) Pinning now tolerates measure words:
+  "run one baseline" no longer misses the "run baseline" entry. (7) Prompt and rule
   version is raised to 3, so stale cached verdicts can no longer impersonate the new
-  rules. The case set grows to 77 cases / 119 assertions with four new guards (traverse
-  both ways, asking about modes, the new troubleshooting words, and a structural check on
-  the rule table), each verified with a reverse control.
+  rules. (8) A web-context exclusion: "button" and "sidebar" in a web page are not DSH
+  itself — when the sentence mentions web / frontend / html / react and no DSH word, the
+  composite rule stays off, otherwise "add a back-to-top button to this page" lands in
+  Creative, which has no Office tools. The case set grows to 86 cases / 133 assertions
+  with eight new guards, each verified with a reverse control — which also exposed a hole
+  in the previous guards: asserting only on `mode` stays green for a broken
+  implementation, because `suggest` results carry a mode too; they now assert on `kind`.
 - **0.2.0** (2026-11-16): **the decision engine is rebuilt around accuracy, and it finally
   has a number.** (1) Signals are now tiered: a pinned tool or a decisive feature decides
   alone, **partial evidence needs two hits in the same mode**, hints never decide. This

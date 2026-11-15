@@ -1,6 +1,6 @@
 /**
  * dsh-npie-modeguide — 浏览器半区（由 build.mjs 生成，不要手改）。
- * source-sha1: 58880f3749d2aa55a75a52311100cf53fc66aa08
+ * source-sha1: 79d7e86ecd01971bc57e9b80ab73ecd9c9496c7a
  *
  * 改逻辑请改 src/capabilities.js / src/recommender.js / adapter.js，然后 node build.mjs。
  */
@@ -454,7 +454,12 @@ window.__ModuleLoader__.load({
        * 里同时出现，才等于「要改 DSH 本身」—— 这正是报告里说的「动作 + 对象」。
        */
       pairs: [{
-        verbs: ['加', '改', '做', '写', '新增', '增加', '删掉', '去掉', '定制', '换成', '换成', 'add', 'edit', 'write', 'remove', 'change', 'customize'],
+        // 「让 / 换 / 设置 / 调整 / 隐藏 / 折叠」是同一类改界面动作：「我想让侧栏默认
+        // 折叠」「给这个按钮换个颜色」都没带「加 / 改」，原先只落到线索、判成不换。
+        // 它们单看很泛（「让他看看」），配上 DSH 内部对象才成立 —— 这正是组合判据的用途。
+        verbs: ['加', '改', '做', '写', '新增', '增加', '删掉', '去掉', '定制', '换成', '换',
+          '让', '设置', '调整', '隐藏', '折叠',
+          'add', 'edit', 'write', 'remove', 'change', 'customize'],
         objects: ['面板', '界面', '按钮', '侧栏', '侧边栏', '主题', '皮肤', '预设', '插件', '快捷键',
           '开关', '菜单', '图标', '输入框', '工具栏', 'panel', 'sidebar', 'button', 'theme', 'preset', 'plugin', 'shortcut', 'toolbar'],
       }],
@@ -484,6 +489,9 @@ window.__ModuleLoader__.load({
       // 极简模式的用途不是「简单任务」，而是「干净的对照」。这是它唯一的存在理由。
       pinned: [
         '用极简', '极简模式', '纯净基线', '做基线', '跑基线', '最小复现',
+        // 「跑一次基线」中间插了个量词，字面的「跑基线」匹配不上 —— 盲测里
+        // 「跑一次基线，只改这一行看差异」因此只拿到方向、没有定案。
+        '跑一次基线', '做一次基线', '跑个基线', '做一次对照',
         'use minimal', 'minimal mode', 'clean baseline', 'minimal repro',
       ],
       // 「对照实验」是决定性的：极简模式唯一的存在理由就是干净对照，别的模式做不了。
@@ -507,11 +515,15 @@ window.__ModuleLoader__.load({
         verbs: ['遍历', '遍历一遍', '逐个过'],
         objects: ['目录', '文件夹', '所有文件', '全部文件', '这批文件', '一批文件', '每个文件', '子目录', '目录下'],
       }],
-      support: ['批量', '遍历', '逐条', '逐个', '去重', '汇总', '统计', '筛选', '清洗', '重命名', '分类',
+      support: ['批量', '遍历', '逐条', '逐个', '去重', '汇总', '筛选', '清洗', '重命名', '分类',
         '合并', '拆分', '全部文件', '所有文件', '脚本', '一次性',
         'batch', 'bulk', 'dedupe', 'deduplicate', 'aggregate', 'rename', 'merge', 'split', 'filter', 'traverse', 'script'],
+      // 「统计」只在弱线索里：`grep -c` 一行就数完了，标准模式的 bash 够用。
+      // 它原先在 support 里，于是「在这个目录下找所有 .log 并统计条数」被
+      // 统计(1) + log + 目录下（两条弱线索 = 1）凑成定案 —— 和「统计表格行数」
+      // 是同一个错误，只是换了一组词。
       weak: ['csv', 'excel', '表格', '日志', 'log', '数据', '正则', 'regex', '目录下', '整理',
-        '格式', 'spreadsheet', 'table', '文件'],
+        '统计', '格式', 'spreadsheet', 'table', '文件'],
       reason: '要遍历 / 批量处理 —— execute 代码执行器可以一次调完所有工具，只回结果，省上下文',
     },
   ])
@@ -543,6 +555,12 @@ window.__ModuleLoader__.load({
     // 跑这批文件」会被当成排错。
     '是干什么的', '干什么用的', '怎么用', '如何使用', '介绍一下', '解释一下', '解释下',
     '解释这个', '解释这段', '帮我解释', '什么意思',
+    // 讲解类：要的是知识，不是产能。「给我讲讲 cordis 插件是怎么加载的」原先靠
+    // 「插件」这条 strong 被判成创作。
+    '讲讲', '讲一下', '说说', '是怎么',
+    // 卸载是宿主设置页里的操作，不是某个模式独有的任务。只收带宾语的形态，
+    // 免得「写个脚本卸载这个依赖」也被压回默认。
+    '卸载了', '卸载掉',
     '看看这个', '看一下这个', '帮我看看', '帮我看一下',
     // 英文
     'why', 'not working', 'stopped working', 'stops working', "won't start", 'not loading',
@@ -569,6 +587,18 @@ window.__ModuleLoader__.load({
 
   /** 低于这个字符数不判：太短的输入没有信息量。 */
   const MIN_INPUT_CHARS = 4
+
+  /**
+   * 网页 / 前端语境，与「改 DSH 本体」是两件事。
+   *
+   * 网页里也有「按钮 / 侧栏 / 面板」，但那是在改某个项目的前端代码（标准模式的文件工具
+   * 就够），不是改 DSH 自己。判错的代价很具体：用户被推去创造模式，而它**没有 Office**。
+   * 只有句子里完全没有 DSH 相关词时才按网页处理 —— 「写个插件，给页面加个按钮」不算。
+   */
+  const WEB_TARGET = /(网页|页面|网站|前端|组件库|landing page)|(^|[^a-z])(html|css|react|vue)([^a-z]|$)/
+
+  /** 出现这些词就说明确实是 DSH 语境，网页排除不适用。 */
+  const DSH_CONTEXT = /(dsh|deepseek harness|cordis|插件|plugin|预设|preset)/
 
   /**
    * 提示词与**规则语义**的版本号。改了提示词、或改了规则能判出的结论，都要 +1。
@@ -778,10 +808,13 @@ window.__ModuleLoader__.load({
       return emptyResult({ reason: '描述太短，还看不出要做什么' })
     }
 
+    // 网页语境的「按钮 / 侧栏」不算改 DSH 本体（见 WEB_TARGET 的说明）。
+    const webTask = WEB_TARGET.test(text) && !DSH_CONTEXT.test(text)
+
     const scored = MODE_RULES.map((rule) => {
       const pinned = hits(text, rule.pinned || [])
       const strong = hits(text, rule.strong || [])
-      const pairs = pairHits(text, rule.pairs)
+      const pairs = rule.id === 'cordis' && webTask ? [] : pairHits(text, rule.pairs)
       const support = hits(text, rule.support || [])
       const weak = hits(text, rule.weak || [])
       return { rule, pinned, strong, pairs, support, weak, supportTotal: support.length + weak.length }

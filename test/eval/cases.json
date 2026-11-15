@@ -352,5 +352,59 @@
     "expect": "default",
     "lang": "en",
     "why": "English meta-question about modes, not a task"
+  },
+  {
+    "text": "帮我在这个目录下找所有 .log 并统计条数",
+    "expect": "default",
+    "lang": "zh",
+    "why": "统计 + 数据类型 + 位置三条弱线索只合一条部分证据：grep -c 一行就数完了"
+  },
+  {
+    "text": "给我讲讲 cordis 插件是怎么加载的",
+    "expect": "default",
+    "lang": "zh",
+    "why": "讲解类：要的是知识不是产能，「插件」这条强信号不算数"
+  },
+  {
+    "text": "帮我把这个插件卸载了",
+    "expect": "default",
+    "lang": "zh",
+    "why": "卸载是宿主设置页里的操作，不是某个模式独有的任务"
+  },
+  {
+    "text": "我想让侧栏默认折叠",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "「让 + 侧栏」也是改界面，动词表不能只有加 / 改"
+  },
+  {
+    "text": "给这个按钮换个颜色",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "「换 + 按钮」同上"
+  },
+  {
+    "text": "跑一次基线，只改这一行看差异",
+    "expect": "minimal",
+    "lang": "zh",
+    "why": "点名跑基线，量词插在中间也要认出来"
+  },
+  {
+    "text": "给这个网页加一个返回顶部按钮",
+    "expect": "default",
+    "lang": "zh",
+    "why": "网页里的按钮不是 DSH 本体，改前端代码标准模式就够"
+  },
+  {
+    "text": "用 react 写一个可折叠侧栏组件",
+    "expect": "default",
+    "lang": "zh",
+    "why": "前端组件同理：技术栈词在场时不能当成改界面"
+  },
+  {
+    "text": "写个插件，给页面加个按钮",
+    "expect": "cordis",
+    "lang": "zh",
+    "why": "反向对照：句中有「插件」说明确实是 DSH 语境，网页排除不该生效"
   }
 ]

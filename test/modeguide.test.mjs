@@ -241,6 +241,50 @@ test('规则表结构：ptc 的决定性特征里没有「遍历」，它只在�
   assert.match(ptcBlock, /verbs: \['遍历'/, '组合判据里应保留遍历动词')
 })
 
+test('讲解 / 卸载 / 统计条数：强信号不能压过「这不是任务」', () => {
+  for (const text of [
+    '给我讲讲 cordis 插件是怎么加载的',
+    '帮我把这个插件卸载了',
+    '帮我在这个目录下找所有 .log 并统计条数',
+  ]) {
+    const result = recommendByRules(text)
+    assert.notEqual(result.kind, 'decided', `「${text}」不该定案`)
+    assert.equal(result.noToolNeed, true, `「${text}」应留在默认模式`)
+  }
+  // 反向对照：真要做批量的事，仍然定案 —— 别把上面几条修成「什么都判不换」。
+  assert.equal(recommendByRules('批量把截图里的表格转成 csv').mode, 'ptc')
+})
+
+test('改界面的动词放宽后，组合判据仍然要求 DSH 内部对象', () => {
+  // 断言必须落在 kind 上：`suggest` 结果也会带 mode，只比 mode 的断言对实现坏掉无感。
+  for (const [text, mode] of [['我想让侧栏默认折叠', 'cordis'], ['给这个按钮换个颜色', 'cordis']]) {
+    const result = recommendByRules(text)
+    assert.equal(result.kind, 'decided', `「${text}」应定案`)
+    assert.equal(result.mode, mode, `「${text}」应归 ${mode}`)
+  }
+  // 反向对照：「让 / 换」单看太泛，配上非 DSH 对象就必须沉默。
+  for (const text of ['加一点盐', '让它快一点', '把这个表格换个颜色']) {
+    assert.notEqual(recommendByRules(text).kind, 'decided', `「${text}」不该定案`)
+  }
+})
+
+test('极简的点名写法认量词：跑一次基线 / 做一次基线与跑基线等价', () => {
+  for (const text of ['跑一次基线，只改这一行看差异', '跑基线看差异']) {
+    const result = recommendByRules(text)
+    assert.equal(result.kind, 'decided', `「${text}」应定案`)
+    assert.equal(result.mode, 'minimal', `「${text}」应归极简`)
+  }
+})
+
+test('网页语境的按钮 / 侧栏不是改 DSH 本体', () => {
+  for (const text of ['给这个网页加一个返回顶部按钮', '用 react 写一个可折叠侧栏组件']) {
+    assert.notEqual(recommendByRules(text).kind, 'decided', `「${text}」不该定案`)
+  }
+  // 反向对照：句中出现 DSH 相关词时，网页排除必须让位 —— 否则真需求会被吞掉。
+  assert.equal(recommendByRules('写个插件，给页面加个按钮').mode, 'cordis')
+  assert.equal(recommendByRules('给侧栏加个折叠按钮').mode, 'cordis')
+})
+
 test('写插件归创造模式', () => {
   const result = recommendByRules('给我写个插件，在侧边栏加一个按钮')
   assert.equal(result.kind, 'decided')
@@ -2003,7 +2047,7 @@ test('组合判据：动作 + DSH 内部对象才算换模式，光提到对象�
   assert.notEqual(only.kind, 'decided')
   // 反向对照：摘掉组合判据，第一条就退回「无信号」。
   const noPair = loadRecommender((s) => {
-    const b = s.replace('const pairs = pairHits(text, rule.pairs)', 'const pairs = []')
+    const b = s.replace("rule.id === 'cordis' && webTask ? [] : pairHits(text, rule.pairs)", 'false ? pairHits(text, rule.pairs) : []')
     assert.notEqual(b, s, '组合判据接缝替换没命中')
     return b
   })
