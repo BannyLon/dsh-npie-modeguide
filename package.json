@@ -61,8 +61,8 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test test/*.test.mjs",
-    "check": "node build.mjs && node --test test/*.test.mjs && node scripts/eval.mjs",
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "check": "node build.mjs && node --test \"test/**/*.test.mjs\" && node scripts/eval.mjs",
     "refresh:baseline": "node scripts/refresh-baseline.mjs",
     "eval": "node scripts/eval.mjs",
     "stats": "node scripts/stats.mjs",

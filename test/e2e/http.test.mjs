@@ -18,12 +18,12 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { apply, CONFIG_PATH, JUDGE_PATH } from '../index.js'
+import { apply, CONFIG_PATH, JUDGE_PATH } from '../../index.js'
 
 // 真的能力表：`matrix: null` 会让 askModel 直接放弃（没有可选模式），
 // 那样测的就不是配额而是「表为空」，看起来全绿其实什么都没验证。
 const MATRIX = JSON.parse(
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/preset-baseline.json'), 'utf8'),
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/preset-baseline.json'), 'utf8'),
 ).matrix
 
 /** 起一个只挂了本插件路由的真服务器，返回 baseUrl 与关闭函数。 */

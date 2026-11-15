@@ -451,9 +451,9 @@ App 才会重新执行 factory。
 
 ```sh
 node build.mjs        # 把 src/*.js + adapter.js + locale 词典内联进 client.js
-node --test test/*.test.mjs
+node --test "test/**/*.test.mjs"
 node scripts/eval.mjs # 准确率评测（npm run eval）
-node build.mjs && node --test test/*.test.mjs && node scripts/eval.mjs   # npm run check
+node build.mjs && node --test "test/**/*.test.mjs" && node scripts/eval.mjs   # npm run check
 npm run stats         # 本机反馈汇总（adoption / 按模式 / 判错原文）
 npm run typecheck     # tsc --checkJs，非阻断体检
 ```
@@ -564,8 +564,11 @@ npm run typecheck     # tsc --checkJs，非阻断体检
   `scripts/`，排除 `adapter.js`（大量运行时动态属性，全量 infer 只会逼出一堆
   `any`）。首轮 17 条报错里 4 条真问题：令牌桶 `@returns` 漏写 `refund`、`hits`
   声明 `string[]` 却收到 frozen 数组、`str()` 参数缺注解、`body.source` 是 unknown。
-  ⑧ 判据 109 条 / eval 133 次断言（86 例）全绿；修正三处文档与实现对不上的表述
-  （每 4 秒、自定义预设不纳入对照表、判断 id 来自基线列）。
+  ⑧ 判据 109 条 / eval 133 次断言（86 例）全绿；`test/e2e-http.test.mjs` 移入
+  `test/e2e/`，测试脚本改为 `node --test "test/**/*.test.mjs"`（引号交给 Node 自己
+  展开 glob，`sh` 里的 `**` 不递归）；修正三处文档与实现对不上的表述（每 4 秒、
+  自定义预设不纳入对照表、判断 id 来自基线列），外加一处自己刚写错的：
+  平均耗时零请求时实现返回 `0`（界面画「0ms」），现在返回 `null` 并画「—」。
 - **0.2.1**（2026-11-16）：**拿两轮共 50 条真实说法盲测，修掉 10 处错判**。0.2.0 的
   评测集和规则是同一只手写的，100% 只证明自洽；这一版专门找「结论错了但理由读起来
   像事实」那一类：

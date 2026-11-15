@@ -502,9 +502,9 @@ setting and does not go into `cordis.patch.yml`: the host reads it live from
 
 ```sh
 node build.mjs        # inline src/*.js + adapter.js + locale dictionaries into client.js
-node --test test/*.test.mjs
+node --test "test/**/*.test.mjs"
 node scripts/eval.mjs # accuracy evaluation (npm run eval)
-node build.mjs && node --test test/*.test.mjs && node scripts/eval.mjs   # npm run check
+node build.mjs && node --test "test/**/*.test.mjs" && node scripts/eval.mjs   # npm run check
 npm run stats         # local feedback summary (adoption / per mode / wrong inputs)
 npm run typecheck     # tsc --checkJs, non-blocking health check
 ```
@@ -641,9 +641,13 @@ Known limitations, stated honestly:
   forces a pile of `any`). Of 17 first-round reports, 4 were real: `refund` missing from
   the token bucket's `@returns`, `hits` declared `string[]` while receiving a frozen array,
   an unannotated `str()` parameter, and an `unknown` `body.source`.
-  (8) 109 guards / 133 eval assertions (86 cases) green; three docs statements that no
+  (8) 109 guards / 133 eval assertions (86 cases) green; `test/e2e-http.test.mjs` moved to
+  `test/e2e/` and the test script became `node --test "test/**/*.test.mjs"` (quoted so Node
+  expands the glob itself — `**` does not recurse in `sh`). Three docs statements that no
   longer matched the implementation were corrected (the 4-second period, "custom presets
-  are not included", and "judging ids come from baseline columns").
+  are not included", and "judging ids come from baseline columns"), plus one I had just
+  written wrong myself: average latency returned `0` with zero requests (drawn as "0ms")
+  and now returns `null`, drawn as "—".
 - **0.2.1** (2026-11-16): **blind-tested on 50 real phrasings over two rounds; ten wrong
   verdicts fixed.** The 0.2.0 case set was written by the same hand as the rules, so 100%
   only proved self-consistency. This version hunted the dangerous class — a wrong verdict
