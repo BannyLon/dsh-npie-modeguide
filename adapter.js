@@ -208,7 +208,11 @@ const CSS = `
 .npie-mg-trigger[data-armed="true"]{background:rgba(109,59,245,.2)}
 /* 有建议时按钮变宽：图标 + 一句话。宽度靠内容，不写死，中文英文都放得下。 */
 .npie-mg-trigger[data-hint="true"]{width:auto;gap:4px;padding:0 9px 0 5px}
+/* 拿不准时只给入口、不给结论：去掉紫底、文字降一档，避免被读成「已经判好了」。 */
+.npie-mg-trigger[data-level="ask"]{background:rgba(120,110,150,.10);color:var(--dsw-alias-label-secondary,#6b6579)}
+@media (hover:hover){.npie-mg-trigger[data-level="ask"]:hover{background:rgba(120,110,150,.18)}}
 .npie-mg-badge{font-size:11px;line-height:1;font-weight:600;white-space:nowrap;letter-spacing:.2px}
+.npie-mg-badge[data-level="ask"]{font-weight:500;opacity:.9}
 /* 设置卡：宿主插件页里的表单，尺寸交给宿主，这里只管对齐与行距。 */
 .npie-mg-card{display:flex;flex-direction:column;gap:8px;padding:4px 0}
 .npie-mg-card-row{display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.5}
@@ -623,11 +627,22 @@ function modeShortLabel(column, t) {
  *
  * 抽出来是为了能直接验 —— 徽标的行为（什么时候出现、什么时候闭嘴）才是这个功能的
  * 全部内容，而渲染桩里的 `useEffect` 是空实现，验不到。放到这里之后，
- * 「与默认相同就不显示」「拿不准就不显示」「面板开着就不显示」都能一条一条断言。
+ * 「与默认相同就不显示」「面板开着就不显示」「拿不准给入口而不是结论」都能一条一条断言。
+ *
+ * ## 两档，而不是「有或没有」
+ *
+ * 旧实现只在本地规则**定案**时出徽标，其余一律返回 null。真实说法上量出来的是：
+ * 82 条里只有 24 条能定案（29%），53 条 `unknown`（65%）—— 也就是说十次输入里
+ * 大约七次工具栏什么都不显示，用户看到的是「这个功能没了」。
+ *
+ * 现在拿不准时也返回一个 `level: 'ask'` 的入口：不给结论（那会是编的），但告诉
+ * 用户「点我就能算」。点击才走完整判断（含模型兜底），所以静止状态下仍然零请求。
  *
  * @param {string} draft 输入框里的草稿
  * @param {{open?: boolean, defaultMode?: string|null, available?: string[], minChars?: number}} [options]
- * @returns {{mode: string, signal: string, evidence: string[]}|null}
+ * @returns {{level: 'decided', mode: string, signal: string, evidence: string[]}
+ *   | {level: 'ask', mode: null, signal: string, evidence: string[]}
+ *   | null}
  */
 export function computeInputHint(draft, options = {}) {
   const text = typeof draft === 'string' ? draft.trim() : ''
@@ -639,12 +654,19 @@ export function computeInputHint(draft, options = {}) {
     ? opts.available
     : PRESET_BASELINE.columns.map((column) => column.id)
   const local = recommendByRules(text, { available })
-  // 只有本地规则**定案**才出徽标：suggest / unknown 都意味着「拿不准」，
-  // 而拿不准时既不该打扰用户，也不该为了一个徽标去调模型。
-  if (local.kind !== 'decided' || !local.mode) return null
-  // 与当前默认相同 = 不用换。这时候「建议：X」是错的，X 本来就是当前模式。
-  if (typeof opts.defaultMode === 'string' && opts.defaultMode && local.mode === opts.defaultMode) return null
-  return { mode: local.mode, signal: local.signal, evidence: local.evidence }
+  if (local.kind === 'decided' && local.mode) {
+    // 与当前默认相同 = 不用换。这时候「建议：X」是错的，X 本来就是当前模式。
+    if (typeof opts.defaultMode === 'string' && opts.defaultMode && local.mode === opts.defaultMode) return null
+    return { level: 'decided', mode: local.mode, signal: local.signal, evidence: local.evidence }
+  }
+  // 拿不准：不给结论，只给一个能点的入口。`signal` 一并带上是为了让反馈里的
+  // `hits` 仍然能聚类 —— 「这一类说法本地规则从来判不了」本身就是最有用的信号。
+  return {
+    level: 'ask',
+    mode: null,
+    signal: typeof local.signal === 'string' ? local.signal : 'none',
+    evidence: Array.isArray(local.evidence) ? local.evidence : [],
+  }
 }
 
 /**
@@ -877,7 +899,11 @@ function ModeGuide(props) {
         setHint(null)
         return
       }
-      setHint((prev) => (prev && prev.mode === next.mode ? prev : { mode: next.mode }))
+      // 比较 level 与 mode 两个字段：只比 mode 时 'ask'（mode 为 null）会被
+      // 判定成「和上次一样」，于是从「建议：创造」切到「拿不准」时徽标不更新。
+      setHint((prev) => (
+        prev && prev.level === next.level && prev.mode === next.mode ? prev : { level: next.level, mode: next.mode }
+      ))
     }, hintDelay)
     return () => clearTimeout(timer)
   }, [draft, open, defaultMode, hintDelay])
@@ -887,9 +913,11 @@ function ModeGuide(props) {
     setInput(seed)
     setTip(false)
     setOpen(true)
-    // 有徽标 = 本地规则已经定过案了，展开时直接把结论与理由画出来，
-    // 用户不用再点一次「判断」。**只在这种情况下自动判**：规则拿不准时没有徽标，
-    // 也就不会因为「打开看一眼」而白发一次模型请求。
+    // 有徽标 = 用户已经表达过「我要判断」这件事，展开时直接把结论画出来，
+    // 不用再点一次「判断」。两档都自动判：
+    //   - decided：本地已定案（模型兜底也可能被叫到，但结论就在眼前）；
+    //   - ask：「判断」两个字本身就是用户点下来的动作，点了就该算。
+    // 反过来说，**没徽标就不会自动判** —— 打开看一眼不会白发一次模型请求。
     if (hint && seed.trim()) void runJudge(seed)
   }
   const close = () => {
@@ -1242,11 +1270,22 @@ function ModeGuide(props) {
   const verdict = state.verdict
   const matrix = state.matrix
 
-  // 徽标：把「建议」直接写在按钮上，不弹面板。点击仍走同一条路（展开面板读理由）。
-  const hintLabel = hint ? shortModeLabel(hint.mode, t, matrixRef.current) : ''
+  // 徽标两档：定案时说结论，拿不准时只给一个可点的入口（不编结论）。
+  // 文字取词典而不是写死：`askHint` 在英文里是 "Judge"，直接拼英文单词会漏翻译。
+  const hintLabel = hint && hint.level === 'decided' ? shortModeLabel(hint.mode, t, matrixRef.current) : ''
+  const badgeText = hint
+    ? (hint.level === 'decided' ? t('suggestPrefix') + hintLabel : t('askHint'))
+    : ''
   const badge = hint && !open
-    ? h('span', { className: 'npie-mg-badge', 'data-mode': hint.mode }, t('suggestPrefix') + hintLabel)
+    ? h('span', { className: 'npie-mg-badge', 'data-level': hint.level, 'data-mode': hint.mode || undefined }, badgeText)
     : null
+
+  // 读屏用户听到的必须是同一件事：定案时念结论，拿不准时念「点了才算」。
+  const triggerAria = hint && hint.level === 'decided'
+    ? `${t('suggestPrefix')}${hintLabel}，${t('triggerAria')}`
+    : hint
+      ? `${t('askHint')}，${t('triggerAria')}`
+      : t('triggerAria')
 
   const trigger = h('button', {
     type: 'button',
@@ -1254,10 +1293,11 @@ function ModeGuide(props) {
     className: 'npie-mg-trigger',
     'data-armed': String(open),
     'data-hint': String(Boolean(badge)),
+    'data-level': hint ? hint.level : undefined,
     'aria-haspopup': 'dialog',
     'aria-expanded': open,
     // 徽标是视觉信息，读屏用户只能听到 aria-label：不带进来说等于没做这个功能。
-    'aria-label': badge ? `${t('suggestPrefix')}${hintLabel}，${t('triggerAria')}` : t('triggerAria'),
+    'aria-label': triggerAria,
     onMouseEnter: showTip,
     onMouseLeave: () => setTip(false),
     onFocus: showTip,

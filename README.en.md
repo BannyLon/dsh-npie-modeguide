@@ -39,8 +39,9 @@ error: profile "desktop" is managed exclusively by the Electron application
 
 so desktop needs three manual edits — see "Installation (Desktop)" below. Either way, quit
 and relaunch (`Cmd+Q`) — the browser half has no hot reload. A mode icon appears left of the
-composer; once you type a task it shows "Suggest: X" directly, and clicking it opens the
-reasoning.
+composer; once you type a task it shows a result — "Suggest: X" when the rules are
+confident, "Judge" when they are not (one click to compute), and clicking opens the
+reasoning. See "Showing a suggestion as you type" for the two tiers.
 
 For local development, `"dsh-npie-modeguide": "link:/absolute/path"` is easier: rebuild
 with `npm run build` and relaunch (`client.js` is generated — without a rebuild nothing
@@ -256,28 +257,43 @@ Through 0.2.2 the flow was "type → click → wait → read the reason → clic
 last step is really needed; the first three are this plugin's cost — **when the cost
 outweighs the benefit, a correct verdict still goes unused.**
 
-Now: 500ms after you stop typing, the mode icon in the toolbar shows "Suggest: X" on its
-own. No panel opens, nothing moves. Clicking it expands the full verdict and reasoning
+Now: 500ms after you stop typing, the mode icon in the toolbar shows a result on its own.
+No panel opens, nothing moves. Clicking it expands the full verdict and reasoning
 (the verdict is already drawn — it does not wait for a second judgement).
+
+**It has two tiers, not "shown or not shown"** — that is exactly what 0.3.1 changed:
+
+| Tier | Next to the icon | When | After clicking |
+|---|---|---|---|
+| Decided | `Suggest: Creative` (purple) | Local rules are confident *and* it differs from your default | Panel opens with the verdict already drawn |
+| Unsure | `Judge` (grey, lighter text) | Local rules are not confident (`suggest` / `unknown`) | Panel opens and **only then** runs the full judgement (including the model fallback) |
+| Silent | nothing | Panel open / draft under 8 characters / verdict equals your default | — |
+
+Why two tiers are necessary: 0.3.0 showed the badge only when the rules **decided**, and
+measurement on 82 real phrasings found only 24 of them decidable (**29%**) — roughly seven
+out of ten inputs showed nothing at all. The user-visible symptom was not "coverage is
+partial" but **"the feature is broken"** (feedback on 2026-11-16: typing
+"我想设计一款绘画插件" left the icon bare). After the change the same sample gives feedback
+on **98%**; only two inputs are still silent because they are too short.
 
 The conditions are deliberately narrow, each with a guard:
 
 | Condition | Behaviour | Why |
 |---|---|---|
-| Local rules **decided** (`kind === 'decided'`) | Show the badge | Only a decided verdict is worth stating; `suggest` and "unsure" stay quiet |
-| Verdict **differs from the current default** | Show the badge | If equal, "Suggest: X" is wrong — X is already the current mode |
-| Panel **not open** | Show the badge | With the panel open the full verdict is already on screen; a badge is noise |
-| Draft **≥ 8 characters** | Show the badge | "help me" or "change it a bit" holds in every mode; a badge on those trains users to ignore it |
+| Local rules **decided** | State the verdict | Confidence earns a verdict; when unsure show an entry point instead of inventing a mode |
+| Verdict **differs from the current default** | State the verdict | If equal, "Suggest: X" is wrong — X is already the current mode |
+| Panel **not open** | Show anything at all | With the panel open the full verdict is already on screen; a badge is noise |
+| Draft **≥ 8 characters** | Show anything at all | "help me" or "change it a bit" holds in every mode; a badge on those trains users to ignore it |
 
-**This path issues no `fetch` at all.** The badge runs local rules only (milliseconds,
-offline, no model), so it spends no quota, never says "called too often", and works on a
-plane — a guard asserts that no network call exists inside the hint path, and fails if one
-is added.
+**While idle this path issues no `fetch` at all.** The badge runs local rules only
+(milliseconds, offline, no model), so it spends no quota, never says "called too often",
+and works on a plane — a guard asserts that no network call exists inside the hint path,
+and fails if one is added. The model fallback only happens when you **click** "Judge":
+that click is you asking for it, so spending quota there is correct.
 
-The trade-off: the badge only covers inputs the local rules can **decide**. On
-conflicting signals ("this plugin should batch-process these files") it shows nothing —
-that still needs one click to reach tier 3. That is deliberate: a permanent "probably
-right" badge is worse than no badge, because it makes people act on a guess.
+The trade-off, stated plainly: the word "Judge" carries no verdict — it only says "this
+is clickable". To get an actual answer you still have to click. That is deliberate: a
+permanent "probably right" verdict is worse than none, because it makes people act on a guess.
 
 ## Accuracy: getting it right is the only acceptance line
 
@@ -286,8 +302,8 @@ adjective here, it is a command you can run:
 
 ```bash
 npm run eval
-# [eval]           133/133 passed (100%) · gated · main 108/108 · heldout 25/25
-# [eval:external]   54/55  passed (98.2%) · not gated
+# [eval]           133/133 passed (100%) · gated (86 cases × two defaults = 133 assertions) · main 108/108 · heldout 25/25
+# [eval:external]   54/55  passed (98.2%) · not gated (34 cases → 55 assertions)
 # [eval:external2]  40/40  passed (100%)  · not gated
 # [eval:external3]  36/40  passed (90%)   · not gated
 ```
@@ -312,11 +328,18 @@ logs, redacted, labelled and run once, and only then did I touch the rules. The 
 below is **before** any rule change; the right one is after (and proves only that those
 specific errors were fixed):
 
-| Batch | Cases | First run | After fixes | Rules changed in that revision |
-|---|---:|---:|---:|---|
-| external-1 | 55 | 63.6% (35/55) | 98.2% (54/55) | mostly one: "plugin" demoted from strong to an object name (that alone moved 63.6% → 87.3%); the rest came from later families |
-| external-2 | 40 | 72.5% (29/40) | 100% (40/40) | the other five: feature/interaction with generic verbs, possibility questions, pair window, negation, compound words |
-| external-3 | 40 | **85% (34/40, frozen before the run)** | 90% (36/40) | only two families of coverage added; 4 cases left as known defects |
+| Batch | Cases | Assertions | First run | After fixes | Rules changed in that revision |
+|---|---:|---:|---:|---:|---|
+| external-1 | 34 | 55 | 63.6% (35/55) | 98.2% (54/55) | mostly one: "plugin" demoted from strong to an object name (that alone moved 63.6% → 87.3%); the rest came from later families |
+| external-2 | 24 | 40 | 72.5% (29/40) | 100% (40/40) | the other five: feature/interaction with generic verbs, possibility questions, pair window, negation, compound words |
+| external-3 | 24 | 40 | **85% (34/40, frozen before the run)** | 90% (36/40) | only two families of coverage added; 4 cases left as known defects |
+
+**"Cases" and "assertions" are two different numbers — do not mix them.** A case marked
+`expect: 'default'` ("this one must not switch") runs once under each default (standard and
+ptc), because what it proves is "never move, whichever default you use". So 34 cases = 55
+assertions, 82 external cases = 135 assertions, and the gated side is 86 cases (main 68 +
+heldout 18) = 133 assertions. **Percentages are computed per assertion**, because every
+assertion is a real judgement.
 
 The third batch was **frozen first, then run**: after labelling I did not look at it again,
 ran it once at 85%, then added coverage for two families only. The remaining 4 cases —
@@ -800,7 +823,7 @@ Known limitations, stated honestly:
 - **The table has a version boundary, and the explanation shares it.** See the
   trade-off note above: the facts in the two sentences come from that table, never
   newer and never older.
-- **"100% gated + 96% external" is not 100% on every phrasing.** See the Accuracy section:
+- **"100% gated + 98.2 / 100 / 90% external" is not 100% on every phrasing.** See the Accuracy section:
   the first external run at 63.6% is this plugin's real starting point; the 98.2% after
   fixes only says those specific errors were repaired. That is the only reason the 👎
   button exists: a sentence the case set cannot cover has to be recorded by the person who
@@ -822,10 +845,26 @@ Known limitations, stated honestly:
 
 ## Changelog
 
+- **0.3.1** (2026-11-16): **fixes "suggestion as you type" going blank on real inputs.**
+  Reported: typing "我想设计一款绘画插件" left the icon bare. Two causes stacked up.
+  (1) `设计 / 开发 / 制作 / 搭` ("design / develop / make / build") were missing from the
+  Creative verb table, so a statement as direct as any other request came out as `unknown`.
+  (2) More fundamental: the badge had only one tier — "decided". Of 82 real phrasings only
+  29% are decidable and 65% are `unknown`, so seven inputs in ten showed nothing and the
+  feature looked broken. It now has **two tiers: state the verdict when decided (purple
+  "Suggest: X"), offer a clickable "Judge" when unsure (grey)**; clicking is what runs the
+  full judgement including the model fallback. Feedback coverage on the same sample goes
+  29% → **98%** (only two inputs are still silent, both too short). Compound words for the
+  new verbs (`搭配` / `设计稿` / `设计师`) are excluded, otherwise "配色搭配不好看" would be
+  read as a task. `PROMPT_VERSION` goes to `5` because rule semantics changed and old
+  cached verdicts must be invalidated. Guards 121 → 122; gated 133/133 and every external
+  number unchanged. Also corrects a **counting error**: the earlier "135 external
+  phrasings in three batches" counted **assertions**, not cases — it is 82 cases
+  (34/24/24), and 133 is likewise the gated assertion count for 86 cases.
 - **0.3.0** (2026-11-16): **the first release tested on phrasings nobody here wrote**, plus
   two cost reductions in interaction and configuration. It implements 8 of the 13 items in
   `docs/benchmark-2026-11-16.md` §5 — the ones that can be done without other people.
-  (1) **External blind test**: three batches, 135 inputs taken verbatim from real session
+  (1) **External blind test**: three batches, 82 inputs (135 assertions) taken verbatim from real session
   logs (redacted: no paths / links / tokens), labelled by me — stated in the case files and
   in this README so nobody mistakes it for a third-party test. First runs 63.6% / 72.5% /
   85% (the third frozen before the run), 98.2% / 100% / 90% after fixes. **Only the first

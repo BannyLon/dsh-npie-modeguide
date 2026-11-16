@@ -7,6 +7,7 @@
     "trigger": "模式推荐",
     "triggerAria": "模式推荐：描述任务，判断该用哪个 Agent 预设",
     "suggestPrefix": "建议：",
+    "askHint": "判断",
     "sheetTitle": "模式推荐",
     "close": "关闭",
     "hint": "把任务写下来，只在需要某个模式独有的工具时才建议换。",

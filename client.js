@@ -1,6 +1,6 @@
 /**
  * dsh-npie-modeguide — 浏览器半区（由 build.mjs 生成，不要手改）。
- * source-sha1: 84a5ce67310118222fa0b6de1d9411e888b1f848
+ * source-sha1: c98d68ddc1f7be0ec1e4bd7a9f4b656b6f2ec1e5
  *
  * 改逻辑请改 src/capabilities.js / src/recommender.js / adapter.js，然后 node build.mjs。
  */
@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
     var module = { exports: {} };
     var exports = module.exports;
     Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-    const LOCALES = {"zh":{"trigger":"模式推荐","triggerAria":"模式推荐：描述任务，判断该用哪个 Agent 预设","suggestPrefix":"建议：","sheetTitle":"模式推荐","close":"关闭","hint":"把任务写下来，只在需要某个模式独有的工具时才建议换。","mnemonic":"口诀：默认别动；写插件换创造；工作流换标准；极简只做对照。","placeholder":"例如：把下载目录 300 个文件按类型分类重命名","inputAria":"任务描述","judge":"给建议","busyModel":"请模型复核…","fallbackNote":"模型没回应，已按本地规则给出建议。","rateLimitedNote":"模型复核问得太频繁了，约 {s} 秒后可再问；这次先按本地规则给建议。","rateLimitedNoteSoon":"模型复核问得太频繁了，稍等片刻再问；这次先按本地规则给建议。","useDraft":"用输入框里的文字","byLlm":"· 模型判断","byRules":"· 规则判断","byDefault":"· 当前新任务默认：","defaultTagFallback":"· 未读到默认，按内置 PTC","apply":"切到这个模式","keepDefault":"保持当前默认","keepShort":"无需切换","alreadyDefault":"结论与你设的新任务默认一致，无需切换。","applying":"切换中…","applyRetry":"重试切换","appliedShort":"已切换","applyTimeout":"切换超时，宿主没有回应。","manualHint":" 可点输入框工具栏里当前显示模式名的地方手动切换。","lockedHint":"这个任务已经开始，模式在创建时就定下了 —— 下个新任务再用它。","applied":"已切换。","noRemote":"这个环境不支持切换模式。","applyFailedPrefix":"切换失败：","unknownReason":"未知原因","matrixToggle":"查看模式之间的差异","matrixToggleHide":"收起差异表","capability":"能力","conditional":"视操作系统而定","legend":"这张表从当前版本内核的预设定义解析；宿主能实时读取时会自动更新。只列出各模式之间有差别的能力；✓ 有　· 没有　? 视环境而定。","feedbackAsk":"这个判断准吗","feedbackUp":"判对了","feedbackDown":"判错了","feedbackThanks":"已记在本机","feedbackFailed":"没记上","statsShow":"本机统计","statsHide":"收起统计","statsJudged":"判了几次","statsRule":"规则定案","statsModel":"模型定案","statsDefault":"留在默认","statsCalls":"模型调用","statsCache":"缓存命中","statsLimited":"被限流","statsAvg":"模型平均耗时","statsFeedback":"反馈","statsUnavailable":"宿主没给出统计（这次运行可能还没走过判定）。","settingsFallback":"规则拿不准时，允许问一次模型","settingsTimeout":"单次判定超时（毫秒）","settingsHint":"改动立刻生效，并写进当前 profile 的配置。","settingsUnavailable":"宿主没把这行的设置下发给界面（旧版本宿主，或插件行 id 与设置命名空间不一致）。","mode_minimal":"极简模式","mode_standard":"标准模式","mode_ptc":"PTC 模式","mode_cordis":"创造模式","short_minimal":"极简","short_standard":"标准","short_ptc":"PTC","short_cordis":"创造","cap_files":"文件读写","cap_search":"文件搜索","cap_shell":"终端命令","cap_web":"联网检索","cap_subagent":"子代理","cap_workflow":"工作流编排","cap_plan":"计划模式","cap_skill":"技能","cap_goal":"目标","cap_todo":"任务清单","cap_ptc":"execute 代码执行","cap_office":"Office 文档","cap_cordis":"改 DSH 本体","cap_pluginManager":"插件管理"},"en":{"trigger":"Mode guide","triggerAria":"Mode guide: describe a task to decide which Agent preset to use","suggestPrefix":"Suggest: ","sheetTitle":"Mode guide","close":"Close","hint":"Describe the task. Switch only if it needs a mode-exclusive tool.","mnemonic":"Default: stay put. Creative for plugins, Standard for workflows, Minimal for baselines.","placeholder":"e.g. Sort and rename 300 files in my Downloads folder by type","inputAria":"Task description","judge":"Recommend","busyModel":"Asking the model…","fallbackNote":"No model response; showing the rule-based recommendation.","rateLimitedNote":"Model review was called too often; try again in about {s}s. Showing the rule-based recommendation for now.","rateLimitedNoteSoon":"Model review was called too often; try again shortly. Showing the rule-based recommendation for now.","useDraft":"Use composer text","byLlm":"· model","byRules":"· rules","byDefault":"· current default: ","defaultTagFallback":"· default unread; using built-in PTC","apply":"Switch to this mode","keepDefault":"Keep current default","keepShort":"No switch needed","alreadyDefault":"This matches your default for new tasks; no switch needed.","applying":"Switching…","applyRetry":"Retry switch","appliedShort":"Switched","applyTimeout":"Switch timed out; the host did not respond.","manualHint":" You can switch manually from the current mode label in the composer toolbar.","lockedHint":"This task has already started; its mode was fixed when it was created. Use this on your next new task.","applied":"Switched.","noRemote":"Mode switching is not available in this environment.","applyFailedPrefix":"Switch failed: ","unknownReason":"unknown reason","matrixToggle":"See how the modes differ","matrixToggleHide":"Hide differences","capability":"Capability","conditional":"Depends on the operating system","legend":"Parsed from this version's preset definitions; refreshed live when the host exposes them. Only capabilities that differ are listed; ✓ yes  · no  ? depends on environment.","feedbackAsk":"Was this verdict right?","feedbackUp":"Right","feedbackDown":"Wrong","feedbackThanks":"saved locally","feedbackFailed":"not saved","statsShow":"Local stats","statsHide":"Hide stats","statsJudged":"verdicts","statsRule":"decided by rules","statsModel":"decided by model","statsDefault":"kept the default","statsCalls":"model calls","statsCache":"cache hits","statsLimited":"rate-limited","statsAvg":"avg model time","statsFeedback":"feedback","statsUnavailable":"The host returned no stats (this run may not have judged anything yet).","settingsFallback":"Ask the model once when rules are unsure","settingsTimeout":"Judge timeout (ms)","settingsHint":"Changes apply immediately and are written to this profile's config.","settingsUnavailable":"The host is not serving this row's settings (older host, or the plugin row id does not match the settings namespace).","mode_minimal":"Minimal","mode_standard":"Standard","mode_ptc":"PTC","mode_cordis":"Creative","short_minimal":"Minimal","short_standard":"Standard","short_ptc":"PTC","short_cordis":"Creative","cap_files":"File read/write","cap_search":"File search","cap_shell":"Terminal","cap_web":"Web search","cap_subagent":"Subagents","cap_workflow":"Workflow","cap_plan":"Plan mode","cap_skill":"Skills","cap_goal":"Goals","cap_todo":"Task list","cap_ptc":"execute (code mode)","cap_office":"Office documents","cap_cordis":"Edit DSH itself","cap_pluginManager":"Plugin manager"}};
+    const LOCALES = {"zh":{"trigger":"模式推荐","triggerAria":"模式推荐：描述任务，判断该用哪个 Agent 预设","suggestPrefix":"建议：","askHint":"判断","sheetTitle":"模式推荐","close":"关闭","hint":"把任务写下来，只在需要某个模式独有的工具时才建议换。","mnemonic":"口诀：默认别动；写插件换创造；工作流换标准；极简只做对照。","placeholder":"例如：把下载目录 300 个文件按类型分类重命名","inputAria":"任务描述","judge":"给建议","busyModel":"请模型复核…","fallbackNote":"模型没回应，已按本地规则给出建议。","rateLimitedNote":"模型复核问得太频繁了，约 {s} 秒后可再问；这次先按本地规则给建议。","rateLimitedNoteSoon":"模型复核问得太频繁了，稍等片刻再问；这次先按本地规则给建议。","useDraft":"用输入框里的文字","byLlm":"· 模型判断","byRules":"· 规则判断","byDefault":"· 当前新任务默认：","defaultTagFallback":"· 未读到默认，按内置 PTC","apply":"切到这个模式","keepDefault":"保持当前默认","keepShort":"无需切换","alreadyDefault":"结论与你设的新任务默认一致，无需切换。","applying":"切换中…","applyRetry":"重试切换","appliedShort":"已切换","applyTimeout":"切换超时，宿主没有回应。","manualHint":" 可点输入框工具栏里当前显示模式名的地方手动切换。","lockedHint":"这个任务已经开始，模式在创建时就定下了 —— 下个新任务再用它。","applied":"已切换。","noRemote":"这个环境不支持切换模式。","applyFailedPrefix":"切换失败：","unknownReason":"未知原因","matrixToggle":"查看模式之间的差异","matrixToggleHide":"收起差异表","capability":"能力","conditional":"视操作系统而定","legend":"这张表从当前版本内核的预设定义解析；宿主能实时读取时会自动更新。只列出各模式之间有差别的能力；✓ 有　· 没有　? 视环境而定。","feedbackAsk":"这个判断准吗","feedbackUp":"判对了","feedbackDown":"判错了","feedbackThanks":"已记在本机","feedbackFailed":"没记上","statsShow":"本机统计","statsHide":"收起统计","statsJudged":"判了几次","statsRule":"规则定案","statsModel":"模型定案","statsDefault":"留在默认","statsCalls":"模型调用","statsCache":"缓存命中","statsLimited":"被限流","statsAvg":"模型平均耗时","statsFeedback":"反馈","statsUnavailable":"宿主没给出统计（这次运行可能还没走过判定）。","settingsFallback":"规则拿不准时，允许问一次模型","settingsTimeout":"单次判定超时（毫秒）","settingsHint":"改动立刻生效，并写进当前 profile 的配置。","settingsUnavailable":"宿主没把这行的设置下发给界面（旧版本宿主，或插件行 id 与设置命名空间不一致）。","mode_minimal":"极简模式","mode_standard":"标准模式","mode_ptc":"PTC 模式","mode_cordis":"创造模式","short_minimal":"极简","short_standard":"标准","short_ptc":"PTC","short_cordis":"创造","cap_files":"文件读写","cap_search":"文件搜索","cap_shell":"终端命令","cap_web":"联网检索","cap_subagent":"子代理","cap_workflow":"工作流编排","cap_plan":"计划模式","cap_skill":"技能","cap_goal":"目标","cap_todo":"任务清单","cap_ptc":"execute 代码执行","cap_office":"Office 文档","cap_cordis":"改 DSH 本体","cap_pluginManager":"插件管理"},"en":{"trigger":"Mode guide","triggerAria":"Mode guide: describe a task to decide which Agent preset to use","suggestPrefix":"Suggest: ","askHint":"Judge","sheetTitle":"Mode guide","close":"Close","hint":"Describe the task. Switch only if it needs a mode-exclusive tool.","mnemonic":"Default: stay put. Creative for plugins, Standard for workflows, Minimal for baselines.","placeholder":"e.g. Sort and rename 300 files in my Downloads folder by type","inputAria":"Task description","judge":"Recommend","busyModel":"Asking the model…","fallbackNote":"No model response; showing the rule-based recommendation.","rateLimitedNote":"Model review was called too often; try again in about {s}s. Showing the rule-based recommendation for now.","rateLimitedNoteSoon":"Model review was called too often; try again shortly. Showing the rule-based recommendation for now.","useDraft":"Use composer text","byLlm":"· model","byRules":"· rules","byDefault":"· current default: ","defaultTagFallback":"· default unread; using built-in PTC","apply":"Switch to this mode","keepDefault":"Keep current default","keepShort":"No switch needed","alreadyDefault":"This matches your default for new tasks; no switch needed.","applying":"Switching…","applyRetry":"Retry switch","appliedShort":"Switched","applyTimeout":"Switch timed out; the host did not respond.","manualHint":" You can switch manually from the current mode label in the composer toolbar.","lockedHint":"This task has already started; its mode was fixed when it was created. Use this on your next new task.","applied":"Switched.","noRemote":"Mode switching is not available in this environment.","applyFailedPrefix":"Switch failed: ","unknownReason":"unknown reason","matrixToggle":"See how the modes differ","matrixToggleHide":"Hide differences","capability":"Capability","conditional":"Depends on the operating system","legend":"Parsed from this version's preset definitions; refreshed live when the host exposes them. Only capabilities that differ are listed; ✓ yes  · no  ? depends on environment.","feedbackAsk":"Was this verdict right?","feedbackUp":"Right","feedbackDown":"Wrong","feedbackThanks":"saved locally","feedbackFailed":"not saved","statsShow":"Local stats","statsHide":"Hide stats","statsJudged":"verdicts","statsRule":"decided by rules","statsModel":"decided by model","statsDefault":"kept the default","statsCalls":"model calls","statsCache":"cache hits","statsLimited":"rate-limited","statsAvg":"avg model time","statsFeedback":"feedback","statsUnavailable":"The host returned no stats (this run may not have judged anything yet).","settingsFallback":"Ask the model once when rules are unsure","settingsTimeout":"Judge timeout (ms)","settingsHint":"Changes apply immediately and are written to this profile's config.","settingsUnavailable":"The host is not serving this row's settings (older host, or the plugin row id does not match the settings namespace).","mode_minimal":"Minimal","mode_standard":"Standard","mode_ptc":"PTC","mode_cordis":"Creative","short_minimal":"Minimal","short_standard":"Standard","short_ptc":"PTC","short_cordis":"Creative","cap_files":"File read/write","cap_search":"File search","cap_shell":"Terminal","cap_web":"Web search","cap_subagent":"Subagents","cap_workflow":"Workflow","cap_plan":"Plan mode","cap_skill":"Skills","cap_goal":"Goals","cap_todo":"Task list","cap_ptc":"execute (code mode)","cap_office":"Office documents","cap_cordis":"Edit DSH itself","cap_pluginManager":"Plugin manager"}};
     const PRESET_BASELINE = {"columns":[{"id":"standard","name":"标准模式"},{"id":"ptc","name":"PTC 模式"},{"id":"minimal","name":"极简模式"},{"id":"cordis","name":"创造模式"}],"rows":[{"id":"files","label":"文件读写","hint":"读、写、编辑工作区文件","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"search","label":"文件搜索","hint":"按名找文件、按内容搜索","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"web","label":"联网检索","hint":"网页搜索与抓取","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"subagent","label":"子代理","hint":"派生子代理并行干活","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"workflow","label":"工作流编排","hint":"多阶段大扇出编排","cells":{"standard":true,"ptc":false,"minimal":false,"cordis":true}},{"id":"plan","label":"计划模式","hint":"先出方案再动手","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"skill","label":"技能","hint":"加载并使用 Skill","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"goal","label":"目标","hint":"跨轮持续推进一个目标","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"todo","label":"任务清单","hint":"给多步任务记进度","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":true}},{"id":"ptc","label":"execute 代码执行","hint":"写一段 JS 批量调工具，只回结果","cells":{"standard":false,"ptc":true,"minimal":false,"cordis":false}},{"id":"office","label":"Office 文档","hint":"读写 Word / Excel / PPT","cells":{"standard":true,"ptc":true,"minimal":false,"cordis":false}},{"id":"cordis","label":"改 DSH 本体","hint":"写插件、改预设、加界面","cells":{"standard":false,"ptc":false,"minimal":false,"cordis":true}},{"id":"pluginManager","label":"插件管理","hint":"装、卸、启停插件","cells":{"standard":"conditional","ptc":false,"minimal":false,"cordis":"conditional"}}]};
 
   // ── src/presets.js ──
@@ -486,9 +486,14 @@ window.__ModuleLoader__.load({
         // 它们单看很泛（「让他看看」），配上 DSH 内部对象才成立 —— 这正是组合判据的用途。
         verbs: ['加', '改', '做', '写', '新增', '增加', '删掉', '去掉', '定制', '换成', '换',
           '让', '设置', '调整', '隐藏', '折叠', '修', '修复', '补上', '迁移', '优化',
+          // 「我想设计一款绘画插件」「开发一个侧栏面板」是最直白的派活，却因为没有
+          // 「加 / 改 / 做」而被判成 unknown —— 真实说法里这类动词很常见，缺一个就是
+          // 用户看到「功能不起作用」（2026-11-16 用户截图实测）。
+          '设计', '开发', '制作', '搭',
           // 「修一下」是反向词（排错），但「修主题插件选择器」是明确的改动指令：
           // 区别在于后面跟的是不是 DSH 内部对象 —— 这正是组合判据存在的意义。
-          'add', 'edit', 'write', 'remove', 'change', 'customize', 'fix', 'migrate', 'optimize'],
+          'add', 'edit', 'write', 'remove', 'change', 'customize', 'fix', 'migrate', 'optimize',
+          'design', 'build', 'create', 'implement'],
         // 一句之内成立即可，不要求紧邻：真实说法常把动作放在句子后半
         // （「技能市场和 MCP 市场里的卡片也改成两列显示」）。
         // 跨句仍不算 —— 那多半是两件事。
@@ -777,8 +782,11 @@ window.__ModuleLoader__.load({
    *
    * 4（0.2.3）：`插件` 从 strong 降为 support、pairs 扩了「修 / 功能 / 交互 / 行为 /
    * 消息 / 卡片」、ptc 收了清理类动词、反向词让位给需求句式 —— 结论会变，必须换 key。
+   * 5（0.3.1）：cordis 的通用动词收了「设计 / 开发 / 制作 / 搭」，并排除「搭配 /
+   * 设计稿 / 设计师」这三个复合词 —— 「我想设计一款绘画插件」从 unknown 变成
+   * decided(cordis)，结论会变，必须换 key。
    */
-  const PROMPT_VERSION = '4'
+  const PROMPT_VERSION = '5'
 
   /**
    * 把文本归一，方便匹配：小写、全角转半角、弯引号转直引号。
@@ -924,6 +932,9 @@ window.__ModuleLoader__.load({
     '加载', '加入', '加油', '加快', '加强', '加大', '加权',
     '改写', '改编', '改造', '改天', '改进', '改正',
     '做法', '做梦',
+    // 新加的动作词各自的常见复合词：「配色搭配不好」里的「搭」不是要搭什么，
+    // 「设计稿的间距」是在说稿子本身。不排掉就会把描述当成派活。
+    '搭配', '设计稿', '设计师',
   ])
 
   /**
@@ -1702,7 +1713,11 @@ window.__ModuleLoader__.load({
   .npie-mg-trigger[data-armed="true"]{background:rgba(109,59,245,.2)}
   /* 有建议时按钮变宽：图标 + 一句话。宽度靠内容，不写死，中文英文都放得下。 */
   .npie-mg-trigger[data-hint="true"]{width:auto;gap:4px;padding:0 9px 0 5px}
+  /* 拿不准时只给入口、不给结论：去掉紫底、文字降一档，避免被读成「已经判好了」。 */
+  .npie-mg-trigger[data-level="ask"]{background:rgba(120,110,150,.10);color:var(--dsw-alias-label-secondary,#6b6579)}
+  @media (hover:hover){.npie-mg-trigger[data-level="ask"]:hover{background:rgba(120,110,150,.18)}}
   .npie-mg-badge{font-size:11px;line-height:1;font-weight:600;white-space:nowrap;letter-spacing:.2px}
+  .npie-mg-badge[data-level="ask"]{font-weight:500;opacity:.9}
   /* 设置卡：宿主插件页里的表单，尺寸交给宿主，这里只管对齐与行距。 */
   .npie-mg-card{display:flex;flex-direction:column;gap:8px;padding:4px 0}
   .npie-mg-card-row{display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.5}
@@ -2117,11 +2132,22 @@ window.__ModuleLoader__.load({
    *
    * 抽出来是为了能直接验 —— 徽标的行为（什么时候出现、什么时候闭嘴）才是这个功能的
    * 全部内容，而渲染桩里的 `useEffect` 是空实现，验不到。放到这里之后，
-   * 「与默认相同就不显示」「拿不准就不显示」「面板开着就不显示」都能一条一条断言。
+   * 「与默认相同就不显示」「面板开着就不显示」「拿不准给入口而不是结论」都能一条一条断言。
+   *
+   * ## 两档，而不是「有或没有」
+   *
+   * 旧实现只在本地规则**定案**时出徽标，其余一律返回 null。真实说法上量出来的是：
+   * 82 条里只有 24 条能定案（29%），53 条 `unknown`（65%）—— 也就是说十次输入里
+   * 大约七次工具栏什么都不显示，用户看到的是「这个功能没了」。
+   *
+   * 现在拿不准时也返回一个 `level: 'ask'` 的入口：不给结论（那会是编的），但告诉
+   * 用户「点我就能算」。点击才走完整判断（含模型兜底），所以静止状态下仍然零请求。
    *
    * @param {string} draft 输入框里的草稿
    * @param {{open?: boolean, defaultMode?: string|null, available?: string[], minChars?: number}} [options]
-   * @returns {{mode: string, signal: string, evidence: string[]}|null}
+   * @returns {{level: 'decided', mode: string, signal: string, evidence: string[]}
+   *   | {level: 'ask', mode: null, signal: string, evidence: string[]}
+   *   | null}
    */
   function computeInputHint(draft, options = {}) {
     const text = typeof draft === 'string' ? draft.trim() : ''
@@ -2133,12 +2159,19 @@ window.__ModuleLoader__.load({
       ? opts.available
       : PRESET_BASELINE.columns.map((column) => column.id)
     const local = recommendByRules(text, { available })
-    // 只有本地规则**定案**才出徽标：suggest / unknown 都意味着「拿不准」，
-    // 而拿不准时既不该打扰用户，也不该为了一个徽标去调模型。
-    if (local.kind !== 'decided' || !local.mode) return null
-    // 与当前默认相同 = 不用换。这时候「建议：X」是错的，X 本来就是当前模式。
-    if (typeof opts.defaultMode === 'string' && opts.defaultMode && local.mode === opts.defaultMode) return null
-    return { mode: local.mode, signal: local.signal, evidence: local.evidence }
+    if (local.kind === 'decided' && local.mode) {
+      // 与当前默认相同 = 不用换。这时候「建议：X」是错的，X 本来就是当前模式。
+      if (typeof opts.defaultMode === 'string' && opts.defaultMode && local.mode === opts.defaultMode) return null
+      return { level: 'decided', mode: local.mode, signal: local.signal, evidence: local.evidence }
+    }
+    // 拿不准：不给结论，只给一个能点的入口。`signal` 一并带上是为了让反馈里的
+    // `hits` 仍然能聚类 —— 「这一类说法本地规则从来判不了」本身就是最有用的信号。
+    return {
+      level: 'ask',
+      mode: null,
+      signal: typeof local.signal === 'string' ? local.signal : 'none',
+      evidence: Array.isArray(local.evidence) ? local.evidence : [],
+    }
   }
 
   /**
@@ -2371,7 +2404,11 @@ window.__ModuleLoader__.load({
           setHint(null)
           return
         }
-        setHint((prev) => (prev && prev.mode === next.mode ? prev : { mode: next.mode }))
+        // 比较 level 与 mode 两个字段：只比 mode 时 'ask'（mode 为 null）会被
+        // 判定成「和上次一样」，于是从「建议：创造」切到「拿不准」时徽标不更新。
+        setHint((prev) => (
+          prev && prev.level === next.level && prev.mode === next.mode ? prev : { level: next.level, mode: next.mode }
+        ))
       }, hintDelay)
       return () => clearTimeout(timer)
     }, [draft, open, defaultMode, hintDelay])
@@ -2381,9 +2418,11 @@ window.__ModuleLoader__.load({
       setInput(seed)
       setTip(false)
       setOpen(true)
-      // 有徽标 = 本地规则已经定过案了，展开时直接把结论与理由画出来，
-      // 用户不用再点一次「判断」。**只在这种情况下自动判**：规则拿不准时没有徽标，
-      // 也就不会因为「打开看一眼」而白发一次模型请求。
+      // 有徽标 = 用户已经表达过「我要判断」这件事，展开时直接把结论画出来，
+      // 不用再点一次「判断」。两档都自动判：
+      //   - decided：本地已定案（模型兜底也可能被叫到，但结论就在眼前）；
+      //   - ask：「判断」两个字本身就是用户点下来的动作，点了就该算。
+      // 反过来说，**没徽标就不会自动判** —— 打开看一眼不会白发一次模型请求。
       if (hint && seed.trim()) void runJudge(seed)
     }
     const close = () => {
@@ -2736,11 +2775,22 @@ window.__ModuleLoader__.load({
     const verdict = state.verdict
     const matrix = state.matrix
 
-    // 徽标：把「建议」直接写在按钮上，不弹面板。点击仍走同一条路（展开面板读理由）。
-    const hintLabel = hint ? shortModeLabel(hint.mode, t, matrixRef.current) : ''
+    // 徽标两档：定案时说结论，拿不准时只给一个可点的入口（不编结论）。
+    // 文字取词典而不是写死：`askHint` 在英文里是 "Judge"，直接拼英文单词会漏翻译。
+    const hintLabel = hint && hint.level === 'decided' ? shortModeLabel(hint.mode, t, matrixRef.current) : ''
+    const badgeText = hint
+      ? (hint.level === 'decided' ? t('suggestPrefix') + hintLabel : t('askHint'))
+      : ''
     const badge = hint && !open
-      ? h('span', { className: 'npie-mg-badge', 'data-mode': hint.mode }, t('suggestPrefix') + hintLabel)
+      ? h('span', { className: 'npie-mg-badge', 'data-level': hint.level, 'data-mode': hint.mode || undefined }, badgeText)
       : null
+
+    // 读屏用户听到的必须是同一件事：定案时念结论，拿不准时念「点了才算」。
+    const triggerAria = hint && hint.level === 'decided'
+      ? `${t('suggestPrefix')}${hintLabel}，${t('triggerAria')}`
+      : hint
+        ? `${t('askHint')}，${t('triggerAria')}`
+        : t('triggerAria')
 
     const trigger = h('button', {
       type: 'button',
@@ -2748,10 +2798,11 @@ window.__ModuleLoader__.load({
       className: 'npie-mg-trigger',
       'data-armed': String(open),
       'data-hint': String(Boolean(badge)),
+      'data-level': hint ? hint.level : undefined,
       'aria-haspopup': 'dialog',
       'aria-expanded': open,
       // 徽标是视觉信息，读屏用户只能听到 aria-label：不带进来说等于没做这个功能。
-      'aria-label': badge ? `${t('suggestPrefix')}${hintLabel}，${t('triggerAria')}` : t('triggerAria'),
+      'aria-label': triggerAria,
       onMouseEnter: showTip,
       onMouseLeave: () => setTip(false),
       onFocus: showTip,

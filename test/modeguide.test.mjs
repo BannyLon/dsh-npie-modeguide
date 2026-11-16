@@ -1210,7 +1210,16 @@ test('浮层按实测高度定位，箭头不会被 overflow 裁掉', () => {
 
 test('图标入口、hover 提示与 reduced-motion 都在产物里', () => {
   const built = readBuilt()
-  assert.match(built, /'aria-label': badge \?/, '有徽标时 aria-label 必须把建议说出来（读屏用户看不到它）')
+  assert.match(built, /const triggerAria = hint && hint\.level === 'decided'/,
+    'aria-label 必须分两档：定案念结论，拿不准念「点了才算」')
+  assert.match(built, /'aria-label': triggerAria/, '徽标是视觉信息，读屏用户只能听到 aria-label')
+  assert.match(built, /t\('askHint'\)/, '拿不准时的入口文案必须走词典，不能拼英文字面量')
+  // 两档必须在视觉上分得开：渲染分了档而样式没分，用户看到的还是同一个东西
+  // （「颜色搭配不好看」那类 bug 的成因）。
+  assert.match(built, /\.npie-mg-trigger\[data-level="ask"\]\{background:/,
+    '拿不准的入口必须有独立的弱化样式，不能和「建议：X」长得一样')
+  assert.match(built, /'data-level': hint \? hint\.level : undefined/,
+    '档位要落到 DOM 属性上，否则样式选择器够不到')
   assert.match(built, /t\('triggerAria'\)/, '图标按钮必须有可访问名称')
   assert.match(built, /'npie-mg-tipbox'/, 'hover 说明挂到 body，避开工具栏 overflow 裁剪')
   assert.match(built, /role: 'tooltip'/)
@@ -2091,14 +2100,15 @@ const EXTERNAL_FILES = ['test/eval/external.json', 'test/eval/external-2.json', 
 const judgeOne = (text, def = 'standard') =>
   composeVerdict(recommendByRules(text, { available: ALL_MODES }), null, def)
 
-test('输入即显示：徽标只在「规则定案 + 与默认不同 + 面板没开」时出现', () => {
+test('输入即显示：定案说结论，拿不准给可点入口', () => {
   const { computeInputHint } = loadClient()
   assert.equal(typeof computeInputHint, 'function', '徽标判定必须挂出纯函数给判据验')
 
-  // 1) 规则定案且与默认不同 → 出现。
+  // 1) 规则定案且与默认不同 → 直接说结论。
   const cordis = computeInputHint('帮我写个插件，给侧栏加个按钮', { defaultMode: 'standard' })
   assert.ok(cordis, '本地规则已定案，就该在按钮上直接说出来，不用点开面板')
   assert.equal(cordis.mode, 'cordis')
+  assert.equal(cordis.level, 'decided')
 
   // 2) 与当前默认相同 → 不出现。「建议：你正在用的模式」是自相矛盾，比不说更糟。
   assert.equal(computeInputHint('帮我写个插件，给侧栏加个按钮', { defaultMode: 'cordis' }), null)
@@ -2106,14 +2116,38 @@ test('输入即显示：徽标只在「规则定案 + 与默认不同 + 面板�
   // 3) 面板开着 → 不出现：结论区已经说全了，按钮上再来一句就是两处说法。
   assert.equal(computeInputHint('帮我写个插件，给侧栏加个按钮', { defaultMode: 'standard', open: true }), null)
 
-  // 4) 拿不准 → 不出现。徽标只走本地规则，拿不准还硬给建议会逼用户去判断一个猜测。
-  assert.equal(computeInputHint('看看这个项目', { defaultMode: 'standard' }), null)
-  // 5) 太短的草稿 → 不出现（半句话在哪个模式下都成立）。
+  // 4) 拿不准 → 不给结论，但必须给入口。
+  //    旧实现这里返回 null，于是 65% 的真实说法在工具栏上什么都不显示 ——
+  //    用户看到的是「这个功能没了」（2026-11-16 截图即为这一条）。
+  const unsure = computeInputHint('为什么背景颜色不统一', { defaultMode: 'standard' })
+  assert.ok(unsure, '拿不准也要给一个能点的入口，否则功能看起来是坏的')
+  assert.equal(unsure.level, 'ask', '拿不准时档位必须是 ask')
+  assert.equal(unsure.mode, null, '拿不准时不许编一个模式出来')
+
+  // 5) 太短的草稿 → 连入口都不给（半句话在哪个模式下都成立，说了只是噪音）。
   assert.equal(computeInputHint('写个插件', { defaultMode: 'standard' }), null)
 
-  // 反向对照：把门槛降到 0，同一个短句立刻出结论 —— 证明门槛真的在挡东西。
+  // 反向对照 ①：档位必须是两个具体值，否则 level 只是装饰字段。
+  assert.notEqual(cordis.level, unsure.level, '定案与拿不准的档位必须不同，否则渲染分不出两档')
+  // 反向对照 ②：门槛是承重的 —— minChars=0 时短句也会被算出来。
   assert.ok(computeInputHint('写个插件', { defaultMode: 'standard', minChars: 0 }),
     '门槛是承重的：minChars=0 时短句也会被算成建议')
+})
+
+test('直白的派活要判得出来：设计/开发/制作 也是创造模式的动作词', () => {
+  const M = ['minimal', 'standard', 'ptc', 'cordis']
+  // 用户原话：「我想设计一款绘画插件」—— 旧规则判 unknown，因为动词表里只有加/改/做。
+  for (const text of ['我想设计一款绘画插件', '帮我设计一个绘画插件', '开发一个侧栏面板']) {
+    const r = recommendByRules(text, { available: M })
+    assert.equal(r.kind, 'decided', `「${text}」是明确的派活，必须定案`)
+    assert.equal(r.mode, 'cordis', `「${text}」落点是插件源码`)
+  }
+  // 反向对照：这三个动词的复合词不许把描述当成派活。
+  // 「配色搭配不好看」里的「搭」不是要搭什么；「设计稿的间距」是在说稿子本身。
+  for (const text of ['配色搭配不好看', '这个设计稿的间距太小']) {
+    const r = recommendByRules(text, { available: M })
+    assert.notEqual(r.mode, 'cordis', `「${text}」是描述，不是派活`)
+  }
 })
 
 test('设置卡：读值不恒真、不可写不假扮可写、越界不写', () => {
