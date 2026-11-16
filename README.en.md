@@ -12,31 +12,35 @@ one, with **two verifiable sentences** explaining why.
 
 ## Install
 
-Installing a dsh plugin takes **two** edits. Doing only the first one looks like it
-worked and silently loads nothing:
+One command for any **non-desktop** profile (web, …):
 
 ```sh
-# 1) put the package into the profile's dependencies (dsh plugin forwards to pnpm)
-dsh plugin --profile desktop add github:BannyLon/dsh-npie-modeguide
+dsh plugin --profile web add github:BannyLon/dsh-npie-modeguide
 ```
 
-```jsonc
-// 2) open ~/.dsh/profiles/desktop/package.json and add the name to bundles
-{
-  "dependencies": { "dsh-npie-modeguide": "github:BannyLon/dsh-npie-modeguide" },
-  "dsh": { "profile": { "bundles": [
-    "@deepseek-ai/dsh-base",
-    "@deepseek-ai/dsh-web-app",
-    "dsh-npie-modeguide"        // ← without this line the plugin is never loaded
-  ] } }
-}
+That command does two things, and it does not print the second one: pnpm adds the package to
+the profile's `dependencies`, then the CLI reads the package's `dsh.bundle.patch` and
+**appends the name to `dsh.profile.bundles` by itself**. So the old warning — "it installs,
+nothing loads, and nothing complains" — **does not hold on this path**; measured on 0.3.0 in
+a clean profile, the name was already in `bundles` afterwards (the implementation literally
+does `bundles.push(name)` for newly added dependencies that declare `dsh.bundle`).
+
+The inverse is where the warning comes from: a package with **no** `dsh.bundle` gets
+`declares no dsh.bundle — installed as a plain dependency, not a profile layer`. That one
+does warn. This package declares it, so no hand-editing is needed.
+
+**Desktop is the exception.** The `desktop` profile is managed exclusively by the Electron
+application and the CLI refuses:
+
+```
+$ dsh plugin --profile desktop why dsh-npie-modeguide
+error: profile "desktop" is managed exclusively by the Electron application
 ```
 
-Then quit and relaunch (`Cmd+Q` on desktop) — the browser half has no hot reload. A mode
-icon appears left of the composer; once you type a task it shows "Suggest: X" directly,
-and clicking it is what opens the reasoning.
-
-For the web profile use `--profile web`; everything else is identical.
+so desktop needs three manual edits — see "Installation (Desktop)" below. Either way, quit
+and relaunch (`Cmd+Q`) — the browser half has no hot reload. A mode icon appears left of the
+composer; once you type a task it shows "Suggest: X" directly, and clicking it opens the
+reasoning.
 
 For local development, `"dsh-npie-modeguide": "link:/absolute/path"` is easier: rebuild
 with `npm run build` and relaunch (`client.js` is generated — without a rebuild nothing
@@ -862,10 +866,15 @@ Known limitations, stated honestly:
   "other"**, otherwise those branches are tautologies.
   (7) **Publishable**: `LICENSE` (full MIT), `private: false`, `repository / homepage /
   bugs / author`, `publishConfig`, bilingual badges and install notes. The install notes
-  follow measurement: `dsh plugin add` only runs pnpm add, so the name **must** also be
-  added to `dsh.profile.bundles`; otherwise nothing loads and nothing complains. CI now
-  runs `npm ci`, because since 0.3.0 the host half imports `@deepseek-ai/schemastery` and
-  "zero dependencies" no longer holds. Guards 109 → 121; gated eval 133/133; typecheck 0
+  **were written wrong first and corrected by measurement**: the first draft said "`dsh
+  plugin add` only runs pnpm add, so the name must also be added to `dsh.profile.bundles`
+  or nothing loads and nothing complains". One real run in a clean `mgverify` profile
+  showed the CLI reads the new package's `dsh.bundle.patch` and **appends it to `bundles`
+  by itself** (`bundles.push(name)` in the implementation); only a package without
+  `dsh.bundle` gets a warning. So "two manual edits" is true only for the `desktop` profile
+  (hard-refused by the CLI); web and other profiles need one command. The correction is in
+  the README install section. CI now runs `npm ci`, because since 0.3.0 the host half
+  imports `@deepseek-ai/schemastery` and "zero dependencies" no longer holds. Guards 109 → 121; gated eval 133/133; typecheck 0
   errors.
   **Not done, with reasons stated**: co-installation testing with routing-suite /
   evolve-modes / model-router (requires installing three other repos), real-Chrome CDP

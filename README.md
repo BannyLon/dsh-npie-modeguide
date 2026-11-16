@@ -11,29 +11,32 @@
 
 ## 安装
 
-装一个 dsh 插件要动**两处**（只做第一处等于没装，而且不报错）：
+web 等**非 desktop** profile 一条命令：
 
 ```sh
-# ① 把包装进 profile 的依赖（dsh plugin 只是把参数转发给 pnpm）
-dsh plugin --profile desktop add github:BannyLon/dsh-npie-modeguide
+dsh plugin --profile web add github:BannyLon/dsh-npie-modeguide
 ```
 
-```jsonc
-// ② 打开 ~/.dsh/profiles/desktop/package.json，把包名加进 bundles
-{
-  "dependencies": { "dsh-npie-modeguide": "github:BannyLon/dsh-npie-modeguide" },
-  "dsh": { "profile": { "bundles": [
-    "@deepseek-ai/dsh-base",
-    "@deepseek-ai/dsh-web-app",
-    "dsh-npie-modeguide"        // ← 少了这一行，插件不会被加载
-  ] } }
-}
+这条命令做两件事，第二件 dsh 不会打印出来：pnpm 把包装进 profile 的 `dependencies`，
+然后 CLI 读这个包的 `dsh.bundle.patch`，**自动把包名追加进 `dsh.profile.bundles`**。
+所以老经验里那句「装了却没加载、还不报错」在这条路径上**不成立** —— 0.3.0 在一个干净
+profile 里实测过：装完 `package.json` 的 `bundles` 已经有它
+（dsh 的实现就是「新装依赖里带 `dsh.bundle` 的自动进 bundles」）。
+
+反过来说：**包没声明 `dsh.bundle` 时**，CLI 会明说
+`declares no dsh.bundle — installed as a plain dependency, not a profile layer` ——
+那才是「装了等于没装」，而且它是**有警告**的。本插件声明了，所以你不用手改。
+
+**桌面端是例外。** `desktop` profile 归 Electron 应用独占管理，CLI 直接拒绝：
+
+```
+$ dsh plugin --profile desktop why dsh-npie-modeguide
+error: profile "desktop" is managed exclusively by the Electron application
 ```
 
-然后**退出重开**（桌面端 `Cmd+Q`）—— 客户端半区没有热更新。输入框左侧出现一个模式
-图标，输入任务之后它会直接显示「建议：X」，点它才展开理由。
-
-web 端把 `--profile desktop` 换成 `--profile web`，其余相同。
+所以桌面端必须手改三处，见下面「安装（桌面端）」一节。装完**退出重开**（`Cmd+Q`，
+客户端半区没有热更新），输入框左侧出现模式图标，写完任务它会直接显示「建议：X」，
+点它才展开理由。
 
 本地开发时用 `link:` 更省事：`"dsh-npie-modeguide": "link:/绝对路径"`，改完
 `npm run build` 再重开即可（`client.js` 是构建产物，不构建就不会生效）。
@@ -754,8 +757,12 @@ npm run typecheck     # tsc --checkJs，非阻断体检
   说成方向）两条分支；另加一条判据要求**未知信号必须落回「其它」**，否则说明那些
   分支其实是恒真的。
   ⑦ **可发布**：`LICENSE`（MIT 全文）、`private: false`、`repository / homepage /
-  bugs / author`、`publishConfig`、中英徽章与安装说明。安装说明按实测写：`dsh plugin
-  add` 只做 pnpm add，**还必须**把包名加进 `dsh.profile.bundles`，否则不报错也不加载。
+  bugs / author`、`publishConfig`、中英徽章与安装说明。安装说明**先写错了一次，随即实测改掉**：
+  初稿写「`dsh plugin add` 只做 pnpm add，还必须手动把包名加进 `dsh.profile.bundles`，
+  否则不报错也不加载」—— 在干净的 `mgverify` profile 里真跑一遍才发现，CLI 会读新装包的
+  `dsh.bundle.patch` 并**自动**把它追加进 `bundles`（源码里就是 `bundles.push(name)`），
+  没声明 `dsh.bundle` 的包才会收到一行 warning。所以「两处手改」只在 `desktop` profile
+  成立（CLI 对它是硬拒绝），web 等 profile 一条命令即可。这条纠正也写进了 README 安装节。
   CI 补 `npm ci`：0.3.0 起宿主半区 import `@deepseek-ai/schemastery`，「零依赖」不再成立。
   判据 109 → 121 条；卡线 133/133；typecheck 0 错。
   **未做并写明理由**：与 routing-suite / evolve-modes / model-router 同装共存实测
